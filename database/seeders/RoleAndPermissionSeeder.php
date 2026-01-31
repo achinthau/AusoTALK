@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Company;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -22,7 +23,15 @@ class RoleAndPermissionSeeder extends Seeder
         Role::firstOrCreate(['name' => 'company_admin', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
 
-        // Create a super admin user if it doesn't exist
+        // Create demo company
+        $company = Company::firstOrCreate(
+            ['domain' => 'auso-world.com'],
+            [
+                'name' => 'Auso',
+            ]
+        );
+
+        // Create super admin user
         $superAdmin = User::firstOrCreate(
             ['email' => 'admin@pbx.test'],
             [
@@ -31,8 +40,28 @@ class RoleAndPermissionSeeder extends Seeder
                 'company_id' => null,
             ]
         );
-
-        // Assign super_admin role
         $superAdmin->syncRoles(['super_admin']);
+
+        // Create company admin user
+        $companyAdmin = User::firstOrCreate(
+            ['email' => 'admin@auso-world.com'],
+            [
+                'name' => 'Company Admin',
+                'password' => bcrypt('password'),
+                'company_id' => $company->id,
+            ]
+        );
+        $companyAdmin->syncRoles(['company_admin']);
+
+        // Create company user
+        $companyUser = User::firstOrCreate(
+            ['email' => 'user@auso-world.com'],
+            [
+                'name' => 'Company User',
+                'password' => bcrypt('password'),
+                'company_id' => $company->id,
+            ]
+        );
+        $companyUser->syncRoles(['user']);
     }
 }

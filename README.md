@@ -77,11 +77,35 @@ The PBC (Private Branch Exchange Control) module includes:
    php artisan serve
    ```
 
-## Default Credentials
+## Demo Credentials
 
+The following demo credentials are available after running the `RoleAndPermissionSeeder`:
+
+### Company
+- **Name**: Auso
+- **Domain**: auso-world.com
+
+### Super Admin User
 - **Email**: admin@pbx.test
 - **Password**: password
 - **Role**: super_admin
+
+### Company Admin User
+- **Email**: admin@auso-world.com
+- **Password**: password
+- **Role**: company_admin
+- **Company**: Auso
+
+### Company User
+- **Email**: user@auso-world.com
+- **Password**: password
+- **Role**: user
+- **Company**: Auso
+
+To seed these demo credentials, run:
+```bash
+php artisan db:seed --class=RoleAndPermissionSeeder
+```
 
 ## Project Structure
 

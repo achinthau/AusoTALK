@@ -357,3 +357,33 @@ $pages->assertNoJavascriptErrors()->assertNoConsoleLogs();
 | decoration-slice | box-decoration-slice |
 | decoration-clone | box-decoration-clone |
 </laravel-boost-guidelines>
+
+## Demo Credentials
+
+The following demo credentials are available after running the RoleAndPermissionSeeder:
+
+### Company
+- **Name**: Auso
+- **Domain**: auso-world.com
+
+### Super Admin User
+- **Email**: admin@pbx.test
+- **Password**: password
+- **Role**: super_admin
+
+### Company Admin User
+- **Email**: admin@auso-world.com
+- **Password**: password
+- **Role**: company_admin
+- **Company**: Auso
+
+### Company User
+- **Email**: user@auso-world.com
+- **Password**: password
+- **Role**: user
+- **Company**: Auso
+
+To seed these demo credentials, run:
+\\\ash
+php artisan db:seed --class=RoleAndPermissionSeeder
+\\\
