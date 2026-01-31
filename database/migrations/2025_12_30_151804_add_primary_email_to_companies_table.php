@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->boolean('primary_email_enabled')->default(false);
+            $table->boolean('primary_email_enabled')->default(false)->after('domain');
         });
     }
 
