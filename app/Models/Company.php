@@ -15,6 +15,7 @@ class Company extends Model
         'hotline',
         'primary_email_enabled',
         'context',
+        'concurrent_channels',
     ];
 
     public function branches(): HasMany

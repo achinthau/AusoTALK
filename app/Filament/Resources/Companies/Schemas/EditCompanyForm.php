@@ -52,9 +52,16 @@ class EditCompanyForm
                     TextInput::make('hotline')
                         ->maxLength(255),
                 ]),
-            Section::make('Extension Types')
-                ->description('Select available extension types for this company')
+            Section::make('Extensions & Subscription')
+                ->description('Extension types and concurrent channel configuration')
                 ->schema([
+                    TextInput::make('concurrent_channels')
+                        ->label('Concurrent Channels')
+                        ->numeric()
+                        ->nullable()
+                        ->helperText('Maximum number of concurrent calls allowed for this company')
+                        ->inputMode('numeric')
+                        ->minValue(0),
                     Select::make('extensionTypes')
                         ->label('Available Extension Types')
                         ->multiple()
