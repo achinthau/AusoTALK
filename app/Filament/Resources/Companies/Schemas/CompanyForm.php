@@ -22,6 +22,16 @@ class CompanyForm
                         'regex' => 'Please enter a valid domain (e.g., example.com)',
                     ])
                     ->maxLength(255),
+                TextInput::make('context')
+                    ->label('Context')
+                    ->placeholder('e.g., frominternalcompany')
+                    ->nullable()
+                    ->unique(ignoreRecord: true)
+                    ->regex('/^[a-z0-9]+$/')
+                    ->validationMessages([
+                        'regex' => 'Context must only contain lowercase letters and numbers (no spaces or special characters).',
+                        'unique' => 'This context value is already in use.',
+                    ]),
             ]);
     }
 }

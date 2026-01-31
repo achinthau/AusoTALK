@@ -11,6 +11,14 @@ class Extension extends Model
         'number',
         'company_id',
         'extension_type_id',
+        'password',
+        'api_status',
+        'api_payload',
+        'api_response',
+    ];
+
+    protected $hidden = [
+        'password',
     ];
 
     public function company(): BelongsTo

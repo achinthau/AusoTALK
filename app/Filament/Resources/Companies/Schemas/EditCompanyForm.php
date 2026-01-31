@@ -26,32 +26,43 @@ class EditCompanyForm
                         ->disabled()
                         ->dehydrated(false)
                         ->maxLength(255),
+                    TextInput::make('context')
+                        ->label('Context')
+                        ->placeholder('e.g., frominternalcompany')
+                        ->nullable()
+                        ->unique(ignoreRecord: true)
+                        ->regex('/^[a-z0-9]+$/')
+                        ->validationMessages([
+                            'regex' => 'Context must only contain lowercase letters and numbers (no spaces or special characters).',
+                            'unique' => 'This context value is already in use.',
+                        ]),
                 ]),
             Section::make('Contact Information')
                 ->description('Email and communication details')
                 ->schema([
                     TextInput::make('email')
                         ->email()
-                        ->maxLength(255),
+                        ->nullable()
+                        ->unique('companies', 'email', ignoreRecord: true)
+                        ->maxLength(255)
+                        ->requiredIf('primary_email_enabled', true),
                     Checkbox::make('primary_email_enabled')
                         ->label('Use as primary communication email')
-                        ->helperText('Enable this email as the primary contact method')
-                        ->requiredIf('primary_email_enabled', true)
-                        ->rules(['required_if:primary_email_enabled,1' => function ($context) {
-                            return 'The email is required when using as primary communication email.';
-                        }])
-                        ->rules([
-                            function ($context) {
-                                return function ($attribute, $value, $fail) use ($context) {
-                                    if ($value && empty($context['email'])) {
-                                        $fail('Email is required to use this feature.');
-                                    }
-                                };
-                            },
-                        ]),
+                        ->helperText('Enable this email as the primary contact method'),
                     TextInput::make('hotline')
                         ->maxLength(255),
                 ]),
+            Section::make('Extension Types')
+                ->description('Select available extension types for this company')
+                ->schema([
+                    Select::make('extensionTypes')
+                        ->label('Available Extension Types')
+                        ->multiple()
+                        ->relationship('extensionTypes', 'name')
+                        ->preload()
+                        ->searchable(),
+                ])
+                ->visible(fn () => auth()->user()?->hasRole('super_admin')),
         ];
     }
 }

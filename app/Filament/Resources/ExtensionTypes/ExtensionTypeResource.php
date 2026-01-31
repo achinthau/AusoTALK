@@ -25,6 +25,13 @@ class ExtensionTypeResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    protected static bool $shouldRegisterNavigation = false;
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->hasRole('super_admin') || auth()->user()?->hasRole('company_admin') ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return ExtensionTypeForm::configure($schema);
@@ -49,5 +56,25 @@ class ExtensionTypeResource extends Resource
             'create' => CreateExtensionType::route('/create'),
             'edit' => EditExtensionType::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasRole('super_admin') ||  auth()->user()?->hasRole('company_admin') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasRole('super_admin') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->hasRole('super_admin') ?? false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->hasRole('super_admin') ?? false;
     }
 }

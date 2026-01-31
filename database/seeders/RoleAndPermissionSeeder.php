@@ -28,6 +28,7 @@ class RoleAndPermissionSeeder extends Seeder
             ['domain' => 'auso-world.com'],
             [
                 'name' => 'Auso',
+                'context' => 'auso',
             ]
         );
 

@@ -7,19 +7,23 @@ use App\Models\ExtensionType;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 
 class ExtensionForm
 {
     public static function configure(Schema $schema): Schema
     {
+        $userCompanyId = auth()->user()?->company_id;
+        
         return $schema
             ->components([
                 Select::make('company_id')
                     ->label('Company')
                     ->options(Company::pluck('name', 'id'))
                     ->required()
-                    ->hidden(fn () => auth()->user()?->company_id !== null)
-                    ->default(fn () => auth()->user()?->company_id),
+                    ->hidden(fn () => $userCompanyId !== null)
+                    ->default(fn () => $userCompanyId)
+                    ->live(),
                 TextInput::make('number')
                     ->label('Extension Number')
                     ->placeholder('e.g., 1001')
@@ -31,7 +35,7 @@ class ExtensionForm
                     ]),
                 Select::make('extension_type_id')
                     ->label('Extension Type')
-                    ->options(ExtensionType::pluck('name', 'id'))
+                    ->options(fn ($get) => self::getExtensionTypeOptions($get, $userCompanyId))
                     ->required()
                     ->preload()
                     ->searchable()
@@ -46,8 +50,46 @@ class ExtensionForm
                         ])
                     )
                     ->createOptionUsing(function ($data) {
+                        // Only super admins can create extension types
+                        if (!auth()->user()?->hasRole('super_admin')) {
+                            throw new \Exception('Only administrators can create extension types.');
+                        }
                         return ExtensionType::create($data)->id;
                     }),
+                TextInput::make('password')
+                    ->label('Password')
+                    ->password()
+                    ->nullable()
+                    ->helperText('Leave blank to auto-generate a secure password')
+                    ->dehydrated()
+                    ->default(fn () => Str::random(16)),
             ]);
+    }
+
+    protected static function getExtensionTypeOptions($get, $userCompanyId)
+    {
+        $companyId = $get('company_id') ?? $userCompanyId;
+
+        if (!$companyId) {
+            return [];
+        }
+
+        $company = Company::find($companyId);
+
+        if ($company) {
+            // Get extension types for this company with explicit table specification
+            $extensionTypes = $company->extensionTypes()
+                ->select('extension_types.id', 'extension_types.name')
+                ->get()
+                ->pluck('name', 'id')
+                ->toArray();
+
+            if (!empty($extensionTypes)) {
+                return $extensionTypes;
+            }
+        }
+
+        // Fallback to all extension types if none are allocated
+        return ExtensionType::pluck('name', 'id')->toArray();
     }
 }

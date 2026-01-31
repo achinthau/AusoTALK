@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Company extends Model
 {
@@ -13,6 +14,7 @@ class Company extends Model
         'email',
         'hotline',
         'primary_email_enabled',
+        'context',
     ];
 
     public function branches(): HasMany
@@ -23,5 +25,10 @@ class Company extends Model
     public function departments(): HasMany
     {
         return $this->hasMany(Department::class);
+    }
+
+    public function extensionTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(ExtensionType::class, 'company_extension_type');
     }
 }

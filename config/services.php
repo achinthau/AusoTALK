@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'auso' => [
+        'url' => env('AUSO_API_URL'),
+        'username' => env('AUSO_API_USERNAME'),
+        'password' => env('AUSO_API_PASSWORD'),
+        'timeout' => env('AUSO_API_TIMEOUT', 30),
+        'retry_attempts' => env('AUSO_API_RETRY_ATTEMPTS', 3),
+    ],
+
 ];
