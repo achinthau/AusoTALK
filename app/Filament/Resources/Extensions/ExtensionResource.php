@@ -17,11 +17,11 @@ class ExtensionResource extends Resource
 {
     protected static ?string $model = Extension::class;
 
-    protected static \BackedEnum|string|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static \BackedEnum|string|null $navigationIcon =Heroicon::OutlinedRectangleStack;
 
     protected static ?string $navigationLabel = 'Extensions';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'PBC';
+    protected static string|\UnitEnum|null $navigationGroup = 'PBX';
 
     protected static ?int $navigationSort = 2;
 

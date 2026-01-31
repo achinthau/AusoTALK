@@ -22,9 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('companies', function (Blueprint $table) {
-            $table->string('master_email')->nullable(false)->change();
-            $table->string('hotline')->nullable(false)->change();
-        });
+        // Rollback would require reverting to previous state
+        // Skipping to avoid truncation errors
     }
 };

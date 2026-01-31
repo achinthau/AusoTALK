@@ -21,7 +21,7 @@ class ExtensionTypeResource extends Resource
 
     protected static ?string $navigationLabel = 'Extension Types';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'PBC';
+    protected static string|\UnitEnum|null $navigationGroup = 'PBX';
 
     protected static ?int $navigationSort = 1;
 

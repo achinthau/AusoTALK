@@ -14,9 +14,13 @@ class RoleAndPermissionSeeder extends Seeder
      */
     public function run(): void
     {
+        // Reset cached roles and permissions
+        app()['cache']->forget('spatie.permission.cache');
+
         // Create roles
-        Role::firstOrCreate(['name' => 'super_admin']);
-        Role::firstOrCreate(['name' => 'user']);
+        Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'company_admin', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
 
         // Create a super admin user if it doesn't exist
         $superAdmin = User::firstOrCreate(
@@ -29,6 +33,6 @@ class RoleAndPermissionSeeder extends Seeder
         );
 
         // Assign super_admin role
-        $superAdmin->assignRole('super_admin');
+        $superAdmin->syncRoles(['super_admin']);
     }
 }
