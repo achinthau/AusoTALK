@@ -27,6 +27,11 @@ class Company extends Model
         return $this->hasMany(Department::class);
     }
 
+    public function extensions(): HasMany
+    {
+        return $this->hasMany(Extension::class);
+    }
+
     public function extensionTypes(): BelongsToMany
     {
         return $this->belongsToMany(ExtensionType::class, 'company_extension_type');

@@ -26,6 +26,13 @@ The PBC (Private Branch Exchange Control) module includes:
 - Company-scoped visibility for users
 - Unique extension numbers per company
 
+### Auso API Integration
+- **Automatic API Sync** - Extensions are automatically synced to Auso API on creation
+- **API Tracking** - All API calls, payloads, and responses are logged in the database
+- **Resync Capability** - Manual resync button available for failed API calls
+- **Error Recovery** - Failed API calls don't prevent extension creation in the database
+- **Detailed Logging** - Complete audit trail of all API interactions
+
 ### Features
 - **Role-Based Access Control** - User roles and permissions management
 - **Company Isolation** - Users can be scoped to specific companies
@@ -107,6 +114,26 @@ To seed these demo credentials, run:
 php artisan db:seed --class=RoleAndPermissionSeeder
 ```
 
+### Demo Extensions
+
+The `CompanyExtensionSeeder` creates sample extensions for the Auso company:
+
+**SIP Extensions (5 total):**
+- 1001, 1002, 1003, 1004, 1005
+
+**IAX2 Extensions (3 total):**
+- 2001, 2002, 2003
+
+To seed these extensions, run:
+```bash
+php artisan db:seed --class=CompanyExtensionSeeder
+```
+
+Or include them in the full database seed:
+```bash
+php artisan db:seed
+```
+
 ## Project Structure
 
 ```
@@ -136,11 +163,13 @@ database/
 │   ├── 2025_12_30_144833_create_branches_table.php
 │   ├── 2025_12_30_144834_create_departments_table.php
 │   ├── 2025_12_30_160000_create_extension_types_table.php
-│   └── 2025_12_30_160001_create_extensions_table.php
+│   ├── 2025_12_30_160001_create_extensions_table.php
+│   └── 2026_01_31_073426_add_api_tracking_to_extensions_table.php
 └── seeders/
     ├── DatabaseSeeder.php
     ├── RoleAndPermissionSeeder.php
-    └── ExtensionTypeSeeder.php
+    ├── ExtensionTypeSeeder.php
+    └── CompanyExtensionSeeder.php
 ```
 
 ## Resource Management
@@ -177,9 +206,19 @@ database/
   - Extension Number (3-4 digits, required)
   - Company (auto-filled for company users)
   - Extension Type (with inline creation)
+  - API Status (tracks sync status with Auso API)
+  - API Payload (stores the data sent to API)
+  - API Response (stores the API response/error)
 - **Validation**: 
   - Number must be 3-4 digits: `^\d{3,4}$`
   - Unique per company
+- **Actions**: 
+  - Resync button (yellow warning color) - appears when api_status ≠ 200
+  - Requires confirmation before executing
+- **API Integration**: 
+  - Automatic sync on creation to Auso API endpoint `/auExtenAPI/create_exten.php`
+  - Multipart form data with: extension, password, context, status, exten_type, type, updatedby
+  - Error tracking without preventing record creation
 - **Permissions**: Super admin full access, company users see own extensions
 
 ### Extension Types (PBC)
@@ -198,6 +237,10 @@ CREATE TABLE extensions (
     number VARCHAR(4) NOT NULL,
     company_id BIGINT NOT NULL REFERENCES companies(id),
     extension_type_id BIGINT NOT NULL REFERENCES extension_types(id),
+    password VARCHAR(255) NOT NULL,
+    api_status INT NULLABLE,
+    api_payload JSON NULLABLE,
+    api_response JSON NULLABLE,
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     UNIQUE(company_id, number),
@@ -215,6 +258,83 @@ CREATE TABLE extension_types (
     updated_at TIMESTAMP
 );
 ```
+
+## Auso API Integration
+
+### Configuration
+
+Configure the Auso API connection in `.env`:
+
+```env
+AUSO_API_URL=http://your-auso-server:port/path/
+AUSO_API_USERNAME=your_username
+AUSO_API_PASSWORD=your_password
+AUSO_API_TIMEOUT=30
+AUSO_API_RETRY_ATTEMPTS=3
+```
+
+### API Service (`AusoApiManager`)
+
+Located at `app/Services/AusoApiManager.php`, provides:
+
+- **GET requests**: `$apiManager->get(endpoint, query)`
+- **POST requests**: `$apiManager->post(endpoint, data)`
+- **PUT requests**: `$apiManager->put(endpoint, data)`
+- **DELETE requests**: `$apiManager->delete(endpoint)`
+- **Create Extension**: `$apiManager->createExtension(apiData)` - multipart form data
+
+**Features:**
+- Automatic Basic Auth with configured credentials
+- Retry logic with exponential backoff
+- Configurable timeout and retry attempts
+- Exception handling and error messages
+
+### Extension API Workflow
+
+1. **Extension Creation** (User creates extension in Filament)
+   - Extension saved to database
+   - `afterCreate()` hook triggers API call
+   - API payload and response stored in database
+
+2. **API Call Details**
+   - **Endpoint**: `/auExtenAPI/create_exten.php`
+   - **Method**: POST (multipart form data)
+   - **Data Fields**:
+     - `extension`: The extension number
+     - `password`: Extension password
+     - `context`: Company context
+     - `status`: Extension status (default: "ACTIVE")
+     - `exten_type`: Extension protocol type
+     - `type`: Extension protocol type (duplicate)
+     - `updatedby`: User making the change (default: "ADMIN")
+
+3. **API Response Tracking**
+   - **Success** (HTTP 200): `api_status = 200`
+   - **Failure**: `api_status = NULL`, error stored in `api_response`
+   - **Retry**: "Resync with Auso" button available on extension edit page
+
+4. **Error Handling**
+   - Failed API calls don't prevent extension creation
+   - Errors logged to storage/logs/laravel.log
+   - Manual resync available without recreating the extension
+
+### API Tracking Fields
+
+All extensions store:
+- **`api_status`**: HTTP status code (200 = success, NULL = failed/not attempted)
+- **`api_payload`**: JSON array of data sent to API
+- **`api_response`**: JSON response from API or error message
+
+### Manual Resync
+
+To resync a failed extension:
+
+1. Navigate to the extension edit page
+2. Look for the "Resync with Auso" button (appears only if status ≠ 200)
+3. Click the button and confirm
+4. System will attempt the API call again
+5. Success/error notification will appear
+6. Database tracking fields will be updated
 
 ## Development Workflow
 

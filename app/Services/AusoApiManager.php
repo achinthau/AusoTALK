@@ -123,7 +123,7 @@ class AusoApiManager
     {
         try {
             $url = $this->buildUrl('/auExtenAPI/create_exten.php');
-            --dd($url, $data);
+
             $response = Http::timeout($this->timeout)
                 ->withBasicAuth($this->username, $this->password)
                 ->asMultipart()
