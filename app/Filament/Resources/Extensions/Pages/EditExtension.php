@@ -12,6 +12,36 @@ class EditExtension extends EditRecord
 {
     protected static string $resource = ExtensionResource::class;
 
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        // Update context if company changed
+        if (isset($data['company_id'])) {
+            $company = \App\Models\Company::find($data['company_id']);
+            if ($company) {
+                $data['context'] = $company->context ?? '';
+            }
+        }
+
+        // Update exten_type if extension type changed
+        if (isset($data['extension_type_id'])) {
+            $extensionType = \App\Models\ExtensionType::find($data['extension_type_id']);
+            if ($extensionType) {
+                $data['exten_type'] = $extensionType->name ?? '';
+            }
+        }
+
+        // Ensure status and updatedby are set
+        if (! ($data['status'] ?? null)) {
+            $data['status'] = 'ACTIVE';
+        }
+
+        if (! ($data['updatedby'] ?? null)) {
+            $data['updatedby'] = auth()->user()?->name ?? 'ADMIN';
+        }
+
+        return $data;
+    }
+
     protected function getHeaderActions(): array
     {
         return [

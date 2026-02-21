@@ -16,6 +16,27 @@ class CreateExtension extends CreateRecord
         if (auth()->user()?->company_id) {
             $data['company_id'] = auth()->user()->company_id;
         }
+
+        // Populate context from company
+        if ($data['company_id'] ?? null) {
+            $company = \App\Models\Company::find($data['company_id']);
+            if ($company) {
+                $data['context'] = $company->context ?? '';
+            }
+        }
+
+        // Populate exten_type from extension type
+        if ($data['extension_type_id'] ?? null) {
+            $type = \App\Models\ExtensionType::find($data['extension_type_id']);
+            if ($type) {
+                $data['exten_type'] = $type->name ?? '';
+            }
+        }
+
+        // Set defaults
+        $data['status'] = $data['status'] ?? 'ACTIVE';
+        $data['updatedby'] = $data['updatedby'] ?? (auth()->user()?->name ?? 'ADMIN');
+
         return $data;
     }
 
@@ -23,24 +44,23 @@ class CreateExtension extends CreateRecord
     {
         // Call the Auso API to create the extension
         $extension = $this->record;
-        $user = auth()->user()?->id;
-        
+
         $apiData = [
             ['name' => 'extension', 'contents' => $extension->number],
             ['name' => 'password', 'contents' => $extension->password],
-            ['name' => 'context', 'contents' => $extension->company->context],
-            ['name' => 'status', 'contents' => '1'],
-            ['name' => 'exten_type', 'contents' => $extension->extensionType->name],
-            ['name' => 'type', 'contents' => $extension->extensionType->name],
-            ['name' => 'updatedby', 'contents' => $user],
+            ['name' => 'context', 'contents' => $extension->context],
+            ['name' => 'status', 'contents' => $extension->status],
+            ['name' => 'exten_type', 'contents' => $extension->exten_type],
+            ['name' => 'type', 'contents' => $extension->exten_type],
+            ['name' => 'updatedby', 'contents' => $extension->updatedby],
         ];
 
         try {
-            $response = (new AusoApiManager())->createExtension($apiData);
-            
+            $response = (new AusoApiManager)->createExtension($apiData);
+
             // Store the API call details
             $extension->update([
-                'api_status' => 200,
+                'api_status' => $response['status'] ?? null,
                 'api_payload' => $apiData,
                 'api_response' => $response,
             ]);
@@ -51,7 +71,7 @@ class CreateExtension extends CreateRecord
                 'api_payload' => $apiData,
                 'api_response' => ['error' => $e->getMessage()],
             ]);
-            
+
             // Log the error but don't prevent the record from being created
             \Illuminate\Support\Facades\Log::error('Failed to create extension in Auso API', [
                 'extension_id' => $extension->id,
