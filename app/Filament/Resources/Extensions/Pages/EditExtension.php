@@ -14,29 +14,25 @@ class EditExtension extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        // Update context if company changed
-        if (isset($data['company_id'])) {
-            $company = \App\Models\Company::find($data['company_id']);
-            if ($company) {
-                $data['context'] = $company->context ?? '';
-            }
-        }
+        // Get company_id from data or fall back to record's company_id
+        $companyId = $data['company_id'] ?? $this->record->company_id;
+        $number = $data['number'] ?? $this->record->number;
 
-        // Update exten_type if extension type changed
-        if (isset($data['extension_type_id'])) {
-            $extensionType = \App\Models\ExtensionType::find($data['extension_type_id']);
-            if ($extensionType) {
-                $data['exten_type'] = $extensionType->name ?? '';
-            }
-        }
+        // Check for duplicate before attempting to save
+        $exists = \App\Models\Extension::where('company_id', $companyId)
+            ->where('number', $number)
+            ->where('id', '!=', $this->record->id)
+            ->exists();
 
-        // Ensure status and updatedby are set
-        if (! ($data['status'] ?? null)) {
-            $data['status'] = 'ACTIVE';
-        }
+        if ($exists) {
+            Notification::make()
+                ->danger()
+                ->title('Duplicate Extension')
+                ->body('This extension number already exists for this company.')
+                ->persistent()
+                ->send();
 
-        if (! ($data['updatedby'] ?? null)) {
-            $data['updatedby'] = auth()->user()?->name ?? 'ADMIN';
+            $this->halt();
         }
 
         return $data;

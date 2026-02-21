@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Extensions\Pages;
 
 use App\Filament\Resources\Extensions\ExtensionResource;
 use App\Services\AusoApiManager;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateExtension extends CreateRecord
@@ -16,6 +17,26 @@ class CreateExtension extends CreateRecord
         if (auth()->user()?->company_id) {
             $data['company_id'] = auth()->user()->company_id;
         }
+
+        // Check for duplicate before attempting to create
+        if (isset($data['company_id']) && isset($data['number'])) {
+            $exists = \App\Models\Extension::where('company_id', $data['company_id'])
+                ->where('number', $data['number'])
+                ->exists();
+
+            if ($exists) {
+                Notification::make()
+                    ->danger()
+                    ->title('Duplicate Extension')
+                    ->body('This extension number already exists for this company.')
+                    ->persistent()
+                    ->send();
+
+                $this->halt();
+            }
+        }
+
+        // Populate context from company
 
         // Populate context from company
         if ($data['company_id'] ?? null) {
