@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\Extensions;
 
-use App\Filament\Resources\Extensions\Pages\CreateExtension;
-use App\Filament\Resources\Extensions\Pages\EditExtension;
 use App\Filament\Resources\Extensions\Pages\ListExtensions;
 use App\Filament\Resources\Extensions\Schemas\ExtensionForm;
 use App\Filament\Resources\Extensions\Tables\ExtensionsTable;
@@ -17,7 +15,7 @@ class ExtensionResource extends Resource
 {
     protected static ?string $model = Extension::class;
 
-    protected static \BackedEnum|string|null $navigationIcon =Heroicon::OutlinedRectangleStack;
+    protected static \BackedEnum|string|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $navigationLabel = 'Extensions';
 
@@ -43,6 +41,7 @@ class ExtensionResource extends Resource
         if ($user && $user->company_id) {
             return $query->where('company_id', $user->company_id);
         }
+
         // Super admin sees all extensions
         return $query;
     }
@@ -58,8 +57,6 @@ class ExtensionResource extends Resource
     {
         return [
             'index' => ListExtensions::route('/'),
-            'create' => CreateExtension::route('/create'),
-            'edit' => EditExtension::route('/{record}/edit'),
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Extensions\Schemas;
 
 use App\Models\Company;
 use App\Models\ExtensionType;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -14,7 +15,7 @@ class ExtensionForm
     public static function configure(Schema $schema): Schema
     {
         $userCompanyId = auth()->user()?->company_id;
-        
+
         return $schema
             ->components([
                 Select::make('company_id')
@@ -37,6 +38,7 @@ class ExtensionForm
                     ->label('Extension Type')
                     ->options(fn ($get) => self::getExtensionTypeOptions($get, $userCompanyId))
                     ->required()
+                    ->live()
                     ->preload()
                     ->searchable()
                     ->createOptionForm(fn ($form) => $form
@@ -51,9 +53,10 @@ class ExtensionForm
                     )
                     ->createOptionUsing(function ($data) {
                         // Only super admins can create extension types
-                        if (!auth()->user()?->hasRole('super_admin')) {
+                        if (! auth()->user()?->hasRole('super_admin')) {
                             throw new \Exception('Only administrators can create extension types.');
                         }
+
                         return ExtensionType::create($data)->id;
                     }),
                 TextInput::make('password')
@@ -63,15 +66,47 @@ class ExtensionForm
                     ->helperText('Leave blank to auto-generate a secure password')
                     ->dehydrated()
                     ->default(fn () => Str::random(16)),
+                Hidden::make('context')
+                    ->default(fn ($get) => self::getContextForCompany($get)),
+                Hidden::make('status')
+                    ->default('ACTIVE'),
+                Hidden::make('exten_type')
+                    ->default(fn ($get) => self::getExtensionTypeName($get)),
+                Hidden::make('updatedby')
+                    ->default(fn () => auth()->user()?->name ?? 'ADMIN'),
             ]);
+    }
+
+    protected static function getContextForCompany($get)
+    {
+        $companyId = $get('company_id');
+        if ($companyId) {
+            $company = Company::find($companyId);
+
+            return $company?->context ?? '';
+        }
+
+        return '';
+    }
+
+    protected static function getExtensionTypeName($get)
+    {
+        $typeId = $get('extension_type_id');
+        if ($typeId) {
+            $type = ExtensionType::find($typeId);
+
+            return $type?->name ?? '';
+        }
+
+        return '';
     }
 
     protected static function getExtensionTypeOptions($get, $userCompanyId)
     {
         $companyId = $get('company_id') ?? $userCompanyId;
 
-        if (!$companyId) {
-            return [];
+        if (! $companyId) {
+            return ExtensionType::pluck('name', 'id')->toArray();
         }
 
         $company = Company::find($companyId);
@@ -84,7 +119,7 @@ class ExtensionForm
                 ->pluck('name', 'id')
                 ->toArray();
 
-            if (!empty($extensionTypes)) {
+            if (! empty($extensionTypes)) {
                 return $extensionTypes;
             }
         }

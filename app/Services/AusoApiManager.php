@@ -2,28 +2,29 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Exception;
+use Illuminate\Support\Facades\Http;
 
 class AusoApiManager
 {
     protected string $baseUrl;
+
     protected string $username;
+
     protected string $password;
+
     protected int $timeout;
+
     protected int $retryAttempts;
 
     public function __construct()
     {
-        $this->baseUrl = config('services.auso.url');
-        $this->username = config('services.auso.username');
-        $this->password = config('services.auso.password');
+        // Use the direct extension API URL
+        $this->baseUrl = 'http://139.59.35.52:8080';
+        $this->username = config('services.auso.username', '');
+        $this->password = config('services.auso.password', '');
         $this->timeout = config('services.auso.timeout', 30);
         $this->retryAttempts = config('services.auso.retry_attempts', 3);
-
-        if (empty($this->baseUrl)) {
-            throw new Exception('Auso API URL not configured');
-        }
     }
 
     /**
@@ -107,10 +108,10 @@ class AusoApiManager
      */
     protected function buildUrl(string $endpoint, array $query = []): string
     {
-        $url = rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/');
+        $url = rtrim($this->baseUrl, '/').'/'.ltrim($endpoint, '/');
 
-        if (!empty($query)) {
-            $url .= '?' . http_build_query($query);
+        if (! empty($query)) {
+            $url .= '?'.http_build_query($query);
         }
 
         return $url;
@@ -119,25 +120,56 @@ class AusoApiManager
     /**
      * Create a new extension with multipart form data
      */
-    public function createExtension(array $data): int
+    public function createExtension(array $data): array
     {
         try {
             $url = $this->buildUrl('/auExtenAPI/create_exten.php');
 
+            \Log::info('Creating extension via API', [
+                'url' => $url,
+                'data' => $data,
+            ]);
+
             $response = Http::timeout($this->timeout)
-                ->withBasicAuth($this->username, $this->password)
                 ->asMultipart()
                 ->post($url, $data);
 
+            \Log::info('API response', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
             if ($response->failed()) {
-                throw new Exception(
-                    "Failed to create extension: {$response->status()} - {$response->body()}"
-                );
+                \Log::warning('API returned error status', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                // Return response data even if status indicates error
+                return [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'success' => false,
+                ];
             }
 
-            return $response->status();
+            return [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'success' => true,
+            ];
         } catch (Exception $e) {
-            throw $e;
+            \Log::error('API exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Return error response but don't throw
+            return [
+                'status' => 0,
+                'body' => $e->getMessage(),
+                'success' => false,
+            ];
         }
     }
 }

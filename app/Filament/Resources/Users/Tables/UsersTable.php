@@ -20,6 +20,39 @@ class UsersTable
                 TextColumn::make('email')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('phone')
+                    ->label('Phone')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('nic')
+                    ->label('NIC')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('gender')
+                    ->label('Gender')
+                    ->searchable()
+                    ->sortable()
+                    ->badge()
+                    ->color(function (string $state): string {
+                        return match ($state) {
+                            'male' => 'info',
+                            'female' => 'success',
+                            'other' => 'warning',
+                            default => 'gray',
+                        };
+                    })
+                    ->formatStateUsing(function (string $state): string {
+                        return match ($state) {
+                            'male' => 'Male',
+                            'female' => 'Female',
+                            'other' => 'Other',
+                            default => $state,
+                        };
+                    }),
+                TextColumn::make('address')
+                    ->label('Address')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('company.name')
                     ->label('Company')
                     ->searchable()

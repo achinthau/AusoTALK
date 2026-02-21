@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Users;
 
 use App\Filament\Resources\Users\Pages\CreateUser;
-use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\Tables\UsersTable;
@@ -20,6 +19,7 @@ class UserResource extends Resource
     protected static \BackedEnum|string|null $navigationIcon = Heroicon::OutlinedUsers;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Settings';
+
     protected static ?int $navigationSort = 4;
 
     protected static ?string $navigationLabel = 'Users';
@@ -57,6 +57,7 @@ class UserResource extends Resource
         if ($user && $user->company_id) {
             return $query->where('company_id', $user->company_id);
         }
+
         // Super admin sees all users
         return $query;
     }
@@ -73,7 +74,6 @@ class UserResource extends Resource
         return [
             'index' => ListUsers::route('/'),
             'create' => CreateUser::route('/create'),
-            'edit' => EditUser::route('/{record}/edit'),
         ];
     }
 }

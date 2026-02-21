@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Extensions\Tables;
 
-use Filament\Actions\CreateAction;
+use App\Filament\Resources\Extensions\Actions\CreateExtensionAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
@@ -35,7 +35,7 @@ class ExtensionsTable
                 //
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateExtensionAction::make(),
             ])
             ->recordActions([
                 EditAction::make(),

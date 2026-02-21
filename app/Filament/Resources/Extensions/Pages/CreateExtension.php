@@ -23,15 +23,16 @@ class CreateExtension extends CreateRecord
     {
         // Call the Auso API to create the extension
         $extension = $this->record;
+        $user = auth()->user()?->id;
         
         $apiData = [
             ['name' => 'extension', 'contents' => $extension->number],
             ['name' => 'password', 'contents' => $extension->password],
             ['name' => 'context', 'contents' => $extension->company->context],
-            ['name' => 'status', 'contents' => 'ACTIVE'],
+            ['name' => 'status', 'contents' => '1'],
             ['name' => 'exten_type', 'contents' => $extension->extensionType->name],
             ['name' => 'type', 'contents' => $extension->extensionType->name],
-            ['name' => 'updatedby', 'contents' => 'ADMIN'],
+            ['name' => 'updatedby', 'contents' => $user],
         ];
 
         try {

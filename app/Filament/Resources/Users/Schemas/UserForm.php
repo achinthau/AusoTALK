@@ -22,20 +22,49 @@ class UserForm
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(255),
+                TextInput::make('phone')
+                    ->label('Phone')
+                    ->nullable()
+                    ->tel()
+                    ->maxLength(255),
+                TextInput::make('nic')
+                    ->label('NIC')
+                    ->nullable()
+                    ->maxLength(255),
+                Select::make('gender')
+                    ->label('Gender')
+                    ->options([
+                        'male' => 'Male',
+                        'female' => 'Female',
+                        'other' => 'Other',
+                    ])
+                    ->nullable(),
+                TextInput::make('address')
+                    ->label('Address')
+                    ->nullable()
+                    ->maxLength(255),
                 Checkbox::make('auto_generate_password')
                     ->label('Auto Generate Password')
                     ->live()
-                    ->dehydrated(false),
+                    ->dehydrated(false)
+                    ->visible(fn (string $operation) => $operation === 'create'),
                 TextInput::make('password')
                     ->password()
+                    ->nullable()
                     ->required(function (string $operation, $get) {
                         if ($operation === 'create' && $get('auto_generate_password')) {
                             return false;
                         }
+
                         return $operation === 'create';
                     })
-                    ->hidden(fn ($get) => $get('auto_generate_password'))
-                    ->dehydrated(fn ($get) => !$get('auto_generate_password'))
+                    ->placeholder(function (string $operation) {
+                        return $operation === 'edit' ? 'Leave blank to keep current password' : 'Password';
+                    })
+                    ->hidden(function (string $operation, $get) {
+                        return $operation === 'create' && $get('auto_generate_password');
+                    })
+                    ->dehydrated(fn ($state) => ! empty($state))
                     ->maxLength(255),
                 TextInput::make('password_confirmation')
                     ->password()
@@ -44,15 +73,19 @@ class UserForm
                         if ($operation === 'create' && $get('auto_generate_password')) {
                             return false;
                         }
-                        return $operation === 'create';
+
+                        return ! empty($get('password'));
                     })
-                    ->hidden(fn ($get) => $get('auto_generate_password'))
+                    ->hidden(function (string $operation, $get) {
+                        return ($operation === 'create' && $get('auto_generate_password')) || empty($get('password'));
+                    })
+                    ->dehydrated(fn ($state) => ! empty($state))
                     ->maxLength(255),
                 Select::make('roles')
                     ->label('Role')
                     ->options(function () {
                         $user = auth()->user();
-                        
+
                         if ($user?->hasRole('company_admin')) {
                             // Company admin can only create company_admin or user roles
                             return [
@@ -60,7 +93,7 @@ class UserForm
                                 'user' => 'User',
                             ];
                         }
-                        
+
                         // Super admin can create any role
                         return [
                             'super_admin' => 'Super Admin',
@@ -78,23 +111,24 @@ class UserForm
                     ->live()
                     ->required(function ($get) {
                         $role = $get('roles');
+
                         // Company is required for company_admin and user roles
                         return in_array($role, ['company_admin', 'user']);
                     })
                     ->hidden(function ($get) {
                         $user = auth()->user();
                         $role = $get('roles');
-                        
+
                         // Hide for company_admin users (they can only create for their company)
                         if ($user?->hasRole('company_admin')) {
                             return true;
                         }
-                        
+
                         // For super_admin, show only if role is company_admin or user
                         if (empty($role) || $role === 'super_admin') {
                             return true;
                         }
-                        
+
                         return false;
                     }),
             ]);

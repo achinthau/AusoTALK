@@ -4,11 +4,8 @@ namespace App\Filament\Resources\Companies\Schemas;
 
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
-
 
 class EditCompanyForm
 {

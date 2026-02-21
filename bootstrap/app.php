@@ -1,5 +1,8 @@
 <?php
 
+// Load polyfills for PHP < 8.3 compatibility
+require_once __DIR__.'/../app/Polyfills/DomPolyfill.php';
+
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
