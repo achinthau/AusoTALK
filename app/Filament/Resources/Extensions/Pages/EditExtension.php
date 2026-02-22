@@ -57,15 +57,16 @@ class EditExtension extends EditRecord
     protected function resyncExtension(): void
     {
         $extension = $this->record;
+        $company = $extension->company;
 
         $apiData = [
             ['name' => 'extension', 'contents' => $extension->number],
             ['name' => 'password', 'contents' => $extension->password],
-            ['name' => 'context', 'contents' => $extension->context],
-            ['name' => 'status', 'contents' => $extension->status],
+            ['name' => 'context', 'contents' => $company?->name ?? ''],
+            ['name' => 'status', 'contents' => '1'],
             ['name' => 'exten_type', 'contents' => $extension->exten_type],
             ['name' => 'type', 'contents' => $extension->exten_type],
-            ['name' => 'updatedby', 'contents' => $extension->updatedby],
+            ['name' => 'updatedby', 'contents' => (string) auth()->user()?->id],
         ];
 
         try {
