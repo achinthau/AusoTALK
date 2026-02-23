@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('number');
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
             $table->foreignId('extension_type_id')->constrained()->cascadeOnDelete();
+            $table->string('context')->nullable();
             $table->timestamps();
             $table->unique(['company_id', 'number']);
         });
