@@ -23,8 +23,10 @@ class StoreAnsweredCall extends FormRequest
     {
         return [
             'ani' => ['required', 'string'],
+            'dnis' => ['required', 'string'],
             'agent' => ['required', 'string'],
-            'unique_id' => ['required', 'string'],
+            'unique_id' => ['nullable', 'string'],
+            'tenant' => ['required', 'string'],
         ];
     }
 }
