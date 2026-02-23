@@ -85,8 +85,11 @@ class DashboardStatisticsService
 
     public function getOngoingCallCount(): int
     {
-        $keys = Redis::connection()->client()->select(1);
-        $keys = Redis::connection()->client()->keys('agent_on_call-*');
+        $tenant = $this->getTenant();
+
+        Redis::connection()->client()->select(1);
+        $pattern = $tenant ? "agent_on_call-{$tenant}-*" : 'agent_on_call-*';
+        $keys = Redis::connection()->client()->keys($pattern);
 
         return count($keys);
     }
@@ -156,8 +159,13 @@ class DashboardStatisticsService
 
     public function getQueueOngoingCallCount(string $queueName): int
     {
-        $keys = Redis::connection()->client()->select(1);
-        $keys = Redis::connection()->client()->keys("agent_on_call-*-{$queueName}-*");
+        $tenant = $this->getTenant();
+
+        Redis::connection()->client()->select(1);
+        $pattern = $tenant
+            ? "agent_on_call-{$tenant}-{$queueName}-*"
+            : "agent_on_call-*-{$queueName}-*";
+        $keys = Redis::connection()->client()->keys($pattern);
 
         return count($keys);
     }
