@@ -25,7 +25,7 @@ class DashboardStatisticsService
         $sql = "SELECT
             IFNULL(SUM(IF(a.direction = 'in' AND a.status=1, 1, 0)), 0) AS total_inbound_call_count,
             IFNULL(SUM(IF(a.direction = 'out' AND a.status=1, 1, 0)), 0) AS total_outbound_call_count,
-            IFNULL(SUM(IF(a.direction = 'ext', 1, 0)), 0) AS total_internal_call_count
+            IFNULL(SUM(IF(a.direction = 'ext'AND a.status=1, 1, 0)), 0) AS total_internal_call_count
         FROM callcount a
         WHERE a.date > CURDATE()";
 
