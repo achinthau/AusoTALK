@@ -10,7 +10,7 @@ Route::post('/pbx-call-answered', function (StoreAnsweredCall $request) {
     Log::info($request->all());
 
     $tenant = $request['tenant'];
-    $agent = User::where('extension', $request['agent'])->first();
+    $agent = User::where('extension', $request['dnis'])->first();
 
     $redis = Redis::connection()->client();
     $redis->select(1);
@@ -24,7 +24,7 @@ Route::post('/pbx-call-disconnected', function (StoreAnsweredCall $request) {
     Log::info($request->all());
 
     $tenant = $request['tenant'];
-    $agent = User::where('extension', $request['agent'])->first();
+    $agent = User::where('extension', $request['dnis'])->first();
 
     $redis = Redis::connection()->client();
     $redis->select(1);
