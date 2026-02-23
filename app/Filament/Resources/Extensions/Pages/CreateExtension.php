@@ -40,7 +40,7 @@ class CreateExtension extends CreateRecord
         if ($data['company_id'] ?? null) {
             $company = \App\Models\Company::find($data['company_id']);
             if ($company) {
-                $data['context'] = $company->name ?? '';
+                $data['context'] = $company->context ?? '';
             }
         }
 

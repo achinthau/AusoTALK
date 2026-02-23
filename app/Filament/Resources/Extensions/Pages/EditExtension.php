@@ -62,7 +62,7 @@ class EditExtension extends EditRecord
         $apiData = [
             ['name' => 'extension', 'contents' => $extension->number],
             ['name' => 'password', 'contents' => $extension->password],
-            ['name' => 'context', 'contents' => $company?->name ?? ''],
+            ['name' => 'context', 'contents' => $company?->context ?? ''],
             ['name' => 'status', 'contents' => '1'],
             ['name' => 'exten_type', 'contents' => $extension->exten_type],
             ['name' => 'type', 'contents' => $extension->exten_type],
