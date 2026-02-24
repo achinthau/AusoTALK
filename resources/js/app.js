@@ -1,6 +1,11 @@
 function connectWs() {
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(`${protocol}://${window.location.host}/ws`);
+    const port = window.location.port;
+    // On standard ports (80/443) use Nginx /ws proxy; on dev (e.g. :8000) connect directly
+    const url = (port === '' || port === '80' || port === '443')
+        ? `${protocol}://${window.location.host}/ws`
+        : `${protocol}://${window.location.hostname}:6001`;
+    const ws = new WebSocket(url);
 
     ws.addEventListener('message', (event) => {
         try {
