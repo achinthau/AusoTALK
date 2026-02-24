@@ -2,7 +2,8 @@ const wsPort = import.meta.env.VITE_WS_PORT ?? 6001;
 const wsHost = import.meta.env.VITE_WS_HOST ?? window.location.hostname;
 
 function connectWs() {
-    const ws = new WebSocket(`ws://${wsHost}:${wsPort}`);
+    // const ws = new WebSocket(`ws://${wsHost}:${wsPort}`);
+        const ws = new WebSocket(`ws://${window.location.hostname}:${wsPort}`);
 
     ws.addEventListener('message', (event) => {
         try {
