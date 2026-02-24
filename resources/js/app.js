@@ -1,11 +1,8 @@
+const wsPort = import.meta.env.VITE_WS_PORT ?? 6001;
+const wsHost = import.meta.env.VITE_WS_HOST ?? window.location.hostname;
+
 function connectWs() {
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const port = window.location.port;
-    // On standard ports (80/443) use Nginx /ws proxy; on dev (e.g. :8000) connect directly
-    const url = (port === '' || port === '80' || port === '443')
-        ? `${protocol}://${window.location.host}/ws`
-        : `${protocol}://${window.location.hostname}:6001`;
-    const ws = new WebSocket(url);
+    const ws = new WebSocket(`ws://${wsHost}:${wsPort}`);
 
     ws.addEventListener('message', (event) => {
         try {
