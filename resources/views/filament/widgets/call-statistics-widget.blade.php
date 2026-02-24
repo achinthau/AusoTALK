@@ -68,7 +68,7 @@
         .dark .icon-orange { background: #7c2d12; }
     </style>
 
-    <div class="stat-grid">
+    <div class="stat-grid" x-data x-on:statistics-updated.window="$wire.refreshStats()">
 
         {{-- Row 1: Inbound, Outbound, Internal --}}
 

@@ -43,4 +43,9 @@ return [
         'retry_attempts' => env('AUSO_API_RETRY_ATTEMPTS', 3),
     ],
 
+    'ws' => [
+        'port' => env('WS_PORT', 6001),
+        'secret' => env('WS_SECRET', 'pbx-dashboard-secret'),
+    ],
+
 ];

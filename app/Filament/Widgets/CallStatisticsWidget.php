@@ -25,6 +25,16 @@ class CallStatisticsWidget extends Widget
 
     public function mount(): void
     {
+        $this->loadStats();
+    }
+
+    public function refreshStats(): void
+    {
+        $this->loadStats();
+    }
+
+    private function loadStats(): void
+    {
         $service = app(DashboardStatisticsService::class);
 
         $callStats = $service->getCallStatistics();
