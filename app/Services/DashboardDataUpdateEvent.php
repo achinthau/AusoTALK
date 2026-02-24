@@ -2,16 +2,19 @@
 
 namespace App\Services;
 
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
 class DashboardDataUpdateEvent implements ShouldBroadcast
 {
-    public function __construct(public array $statistics) {}
+    public function __construct(
+        public array $statistics,
+        public string $tenant,
+    ) {}
 
-    public function broadcastOn(): Channel
+    public function broadcastOn(): PrivateChannel
     {
-        return new Channel('dashboard-updates');
+        return new PrivateChannel("dashboard-updates-{$this->tenant}");
     }
 
     public function broadcastAs(): string

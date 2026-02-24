@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Requests\StoreAnsweredCall;
 use App\Models\User;
 use App\Services\DashboardStatisticsService;
@@ -40,7 +41,6 @@ Route::match(['GET', 'POST'], '/pbx-call-answered', function (StoreAnsweredCall 
     $redis->set('agent_on_call-'.$tenant.'-'.$agent->id, $request['dnis']);
     $redis->set('call-'.$tenant.'-'.$request['dnis'], $agent->id);
 
-    notifyDashboard();
 
     return response()->json(['status' => 'ok']);
 });
@@ -62,7 +62,11 @@ Route::match(['GET', 'POST'], '/pbx-call-disconnected', function (StoreAnsweredC
     $redis->del('agent_on_call-'.$tenant.'-'.$agent->id);
     $redis->del('call-'.$tenant.'-'.$request['dnis']);
 
-    notifyDashboard();
 
     return response()->json(['status' => 'ok']);
+});
+
+// Authenticated routes for dashboard statistics (fallback when WebSocket is unavailable)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/dashboard/statistics', [DashboardController::class, 'getStatistics']);
 });

@@ -57,6 +57,12 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
+                fn (): string => auth()->check() && auth()->user()->company
+                    ? '<meta name="tenant-context" content="'.e(auth()->user()->company->context).'">'
+                    : '',
+            )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
                 fn (): string => '<script type="module" src="'.Vite::asset('resources/js/app.js').'"></script>',
             );
     }
