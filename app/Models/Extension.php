@@ -25,6 +25,14 @@ class Extension extends Model
         'password',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'api_payload' => 'array',
+            'api_response' => 'array',
+        ];
+    }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);

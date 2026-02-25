@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('extensions', function (Blueprint $table) {
-            $table->string('context')->nullable();
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('extension')->nullable()->unique()->after('phone');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('extensions', function (Blueprint $table) {
-            $table->dropColumn('context');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('extension');
         });
     }
 };

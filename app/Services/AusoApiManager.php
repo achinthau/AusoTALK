@@ -20,7 +20,7 @@ class AusoApiManager
     public function __construct()
     {
         // Use the Auso API URL from environment
-        $this->baseUrl = config('services.auso.url', env('AUSO_API_URL', 'http://139.59.35.52:8080'));
+        $this->baseUrl = config('services.auso.url', env('AUSO_API_URL', 'http://127.0.0.0:8080'));
         $this->username = config('services.auso.username', env('AUSO_API_USERNAME', ''));
         $this->password = config('services.auso.password', env('AUSO_API_PASSWORD', ''));
         $this->timeout = config('services.auso.timeout', env('AUSO_API_TIMEOUT', 30));

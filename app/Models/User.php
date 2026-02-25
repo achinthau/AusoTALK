@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'company_id',
         'phone',
+        'extension',
         'nic',
         'gender',
         'address',

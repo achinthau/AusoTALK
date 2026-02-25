@@ -37,8 +37,6 @@ class CreateExtension extends CreateRecord
         }
 
         // Populate context from company
-
-        // Populate context from company
         if ($data['company_id'] ?? null) {
             $company = \App\Models\Company::find($data['company_id']);
             if ($company) {
@@ -56,48 +54,75 @@ class CreateExtension extends CreateRecord
 
         // Set defaults
         $data['status'] = $data['status'] ?? 'ACTIVE';
-        $data['updatedby'] = $data['updatedby'] ?? (auth()->user()?->name ?? 'ADMIN');
+        $data['updatedby'] = $data['updatedby'] ?? (auth()->user()?->id ?? null);
+
+        // Call the Auso API before creating the extension
+        $apiData = [
+            ['name' => 'extension', 'contents' => $data['number']],
+            ['name' => 'password', 'contents' => $data['password']],
+            ['name' => 'context', 'contents' => $data['context']],
+            ['name' => 'status', 'contents' => '1'],
+            ['name' => 'exten_type', 'contents' => $data['exten_type']],
+            ['name' => 'type', 'contents' => $data['exten_type']],
+            ['name' => 'updatedby', 'contents' => (string) $data['updatedby']],
+        ];
+
+        try {
+            $response = (new AusoApiManager)->createExtension($apiData);
+
+            // Only proceed if API returns 200
+            if (($response['status'] ?? null) !== 200) {
+                Notification::make()
+                    ->danger()
+                    ->title('API Error')
+                    ->body('Failed to create extension. API returned status: '.($response['status'] ?? 'Unknown'))
+                    ->persistent()
+                    ->send();
+
+                $this->halt();
+            }
+
+            // Store API response in data for reference
+            $data['api_status'] = $response['status'] ?? null;
+            $data['api_payload'] = $apiData;
+            $data['api_response'] = $response;
+        } catch (\Exception $e) {
+            Notification::make()
+                ->danger()
+                ->title('API Error')
+                ->body('Error creating extension: '.$e->getMessage())
+                ->persistent()
+                ->send();
+
+            \Illuminate\Support\Facades\Log::error('Failed to create extension in Auso API', [
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->halt();
+        }
 
         return $data;
     }
 
     protected function afterCreate(): void
     {
-        // Call the Auso API to create the extension
+        // Store the API call details if available from form data
         $extension = $this->record;
 
-        $apiData = [
-            ['name' => 'extension', 'contents' => $extension->number],
-            ['name' => 'password', 'contents' => $extension->password],
-            ['name' => 'context', 'contents' => $extension->context],
-            ['name' => 'status', 'contents' => $extension->status],
-            ['name' => 'exten_type', 'contents' => $extension->exten_type],
-            ['name' => 'type', 'contents' => $extension->exten_type],
-            ['name' => 'updatedby', 'contents' => $extension->updatedby],
-        ];
+        $updateData = [];
 
-        try {
-            $response = (new AusoApiManager)->createExtension($apiData);
+        if (isset($this->data['api_status'])) {
+            $updateData['api_status'] = $this->data['api_status'];
+        }
+        if (isset($this->data['api_payload'])) {
+            $updateData['api_payload'] = $this->data['api_payload'];
+        }
+        if (isset($this->data['api_response'])) {
+            $updateData['api_response'] = $this->data['api_response'];
+        }
 
-            // Store the API call details
-            $extension->update([
-                'api_status' => $response['status'] ?? null,
-                'api_payload' => $apiData,
-                'api_response' => $response,
-            ]);
-        } catch (\Exception $e) {
-            // Store the failed attempt
-            $extension->update([
-                'api_status' => null,
-                'api_payload' => $apiData,
-                'api_response' => ['error' => $e->getMessage()],
-            ]);
-
-            // Log the error but don't prevent the record from being created
-            \Illuminate\Support\Facades\Log::error('Failed to create extension in Auso API', [
-                'extension_id' => $extension->id,
-                'error' => $e->getMessage(),
-            ]);
+        if (! empty($updateData)) {
+            $extension->update($updateData);
         }
     }
 

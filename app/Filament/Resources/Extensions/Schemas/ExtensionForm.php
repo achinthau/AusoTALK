@@ -22,8 +22,8 @@ class ExtensionForm
                     ->label('Company')
                     ->options(Company::pluck('name', 'id'))
                     ->required()
-                    ->hidden(fn () => $userCompanyId !== null)
-                    ->default(fn () => $userCompanyId)
+                    ->disabled(fn () => auth()->user()?->company_id !== null)
+                    ->default(fn () => auth()->user()?->company_id)
                     ->live(),
                 TextInput::make('number')
                     ->label('Extension Number')
@@ -41,27 +41,34 @@ class ExtensionForm
                     ->live()
                     ->preload()
                     ->searchable()
-                    ->createOptionForm(fn ($form) => $form
-                        ->schema([
-                            TextInput::make('name')
-                                ->label('Type Name')
-                                ->placeholder('e.g., SIP, IAX2, PJSIP')
-                                ->required()
-                                ->maxLength(255)
-                                ->unique('extension_types', 'name'),
-                        ])
-                    )
-                    ->createOptionUsing(function ($data) {
-                        // Only super admins can create extension types
-                        if (! auth()->user()?->hasRole('super_admin')) {
-                            throw new \Exception('Only administrators can create extension types.');
-                        }
+                    ->when(
+                        auth()->user()?->hasRole('super_admin') === true,
+                        function ($component) {
+                            return $component
+                                ->createOptionForm(fn ($form) => $form
+                                    ->schema([
+                                        TextInput::make('name')
+                                            ->label('Type Name')
+                                            ->placeholder('e.g., SIP, IAX2, PJSIP')
+                                            ->required()
+                                            ->maxLength(255)
+                                            ->unique('extension_types', 'name'),
+                                    ])
+                                )
+                                ->createOptionUsing(function ($data) {
+                                    // Only super admins can create extension types
+                                    if (! auth()->user()?->hasRole('super_admin')) {
+                                        throw new \Exception('Only administrators can create extension types.');
+                                    }
 
-                        return ExtensionType::create($data)->id;
-                    }),
+                                    return ExtensionType::create($data)->id;
+                                });
+                        }
+                    ),
                 TextInput::make('password')
                     ->label('Password')
                     ->password()
+                    ->revealable()
                     ->nullable()
                     ->helperText('Leave blank to auto-generate a secure password')
                     ->dehydrated()
