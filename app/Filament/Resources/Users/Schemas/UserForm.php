@@ -64,7 +64,7 @@ class UserForm
                     ->hidden(function (string $operation, $get) {
                         return $operation === 'create' && $get('auto_generate_password');
                     })
-                    ->dehydrated(fn ($state) => ! empty($state))
+                    ->dehydrated(fn($state) => filled($state))
                     ->maxLength(255),
                 TextInput::make('password_confirmation')
                     ->password()
@@ -79,7 +79,7 @@ class UserForm
                     ->hidden(function (string $operation, $get) {
                         return ($operation === 'create' && $get('auto_generate_password')) || empty($get('password'));
                     })
-                    ->dehydrated(fn ($state) => ! empty($state))
+                    ->dehydrated(false)
                     ->maxLength(255),
                 Select::make('roles')
                     ->label('Role')
@@ -87,10 +87,11 @@ class UserForm
                         $user = auth()->user();
 
                         if ($user?->hasRole('company_admin')) {
-                            // Company admin can only create company_admin or user roles
+                            // Company admin can only create company_admin, user, or agent roles
                             return [
                                 'company_admin' => 'Company Admin',
                                 'user' => 'User',
+                                'agent' => 'Agent',
                             ];
                         }
 
@@ -99,11 +100,11 @@ class UserForm
                             'super_admin' => 'Super Admin',
                             'company_admin' => 'Company Admin',
                             'user' => 'User',
+                            'agent' => 'Agent',
                         ];
                     })
                     ->required()
-                    ->live()
-                    ->dehydrated(false),
+                    ->live(),
                 Select::make('company_id')
                     ->label('Company')
                     ->options(Company::pluck('name', 'id'))
@@ -112,8 +113,8 @@ class UserForm
                     ->required(function ($get) {
                         $role = $get('roles');
 
-                        // Company is required for company_admin and user roles
-                        return in_array($role, ['company_admin', 'user']);
+                        // Company is required for company_admin, user, and agent roles
+                        return in_array($role, ['company_admin', 'user', 'agent']);
                     })
                     ->hidden(function ($get) {
                         $user = auth()->user();
@@ -124,7 +125,7 @@ class UserForm
                             return true;
                         }
 
-                        // For super_admin, show only if role is company_admin or user
+                        // For super_admin, show only if role is company_admin, user, or agent
                         if (empty($role) || $role === 'super_admin') {
                             return true;
                         }

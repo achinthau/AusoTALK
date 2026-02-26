@@ -3,8 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Widgets\CallStatisticsWidget;
-use App\Filament\Widgets\DialerQueueWiseStatisticsWidget;
-use App\Filament\Widgets\QueueWiseStatisticsWidget;
+use App\Filament\Widgets\AgentsWidget;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
@@ -15,8 +14,7 @@ class Dashboard extends BaseDashboard
     {
         return [
             CallStatisticsWidget::class,
-            QueueWiseStatisticsWidget::class,
-            DialerQueueWiseStatisticsWidget::class,
+            AgentsWidget::class,
         ];
     }
 }

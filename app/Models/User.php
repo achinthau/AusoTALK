@@ -29,6 +29,7 @@ class User extends Authenticatable
         'nic',
         'gender',
         'address',
+        'is_logged_in',
     ];
 
     /**
@@ -51,11 +52,17 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_logged_in' => 'boolean',
         ];
     }
 
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function extensionRecord(): BelongsTo
+    {
+        return $this->belongsTo(Extension::class, 'extension', 'number');
     }
 }
