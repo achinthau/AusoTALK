@@ -21,7 +21,17 @@ class EditUser extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
+        // Load the user's role
         $data['roles'] = $this->record->roles->first()?->name;
+        
+        // Ensure all user attributes are present
+        $data['name'] = $this->record->name;
+        $data['email'] = $this->record->email;
+        $data['phone'] = $this->record->phone;
+        $data['nic'] = $this->record->nic;
+        $data['gender'] = $this->record->gender;
+        $data['address'] = $this->record->address;
+        $data['company_id'] = $this->record->company_id;
 
         return $data;
     }

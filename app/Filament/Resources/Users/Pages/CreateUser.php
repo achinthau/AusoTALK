@@ -15,10 +15,14 @@ class CreateUser extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        \Log::info('=== CreateUser START ===');
+        \Log::info('Full form data received:', $data);
+        \Log::info('=== CreateUser END ===');
+        
         // Store role before it's removed from data
         $this->roleToAssign = $data['roles'] ?? null;
-
-        \Log::info('CreateUser - Data received:', $data);
+        
+        \Log::info('CreateUser - Role captured:', ['role' => $this->roleToAssign]);
         
         // Handle auto-generate password
         if (!empty($data['auto_generate_password'])) {
