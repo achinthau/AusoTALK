@@ -11,84 +11,68 @@ class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
 
+    private ?string $roleToAssign = null;
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        \Log::info('=== mutateFormDataBeforeCreate CALLED ===', [
-            'email' => $data['email'] ?? 'N/A',
-            'roles' => $data['roles'] ?? 'N/A',
-            'company_id' => $data['company_id'] ?? 'N/A',
-            'auto_generate_password' => $data['auto_generate_password'] ?? false,
-            'password_provided' => !empty($data['password']),
-        ]);
+        // Store role before it's removed from data
+        $this->roleToAssign = $data['roles'] ?? null;
+
+        \Log::info('CreateUser - Data received:', $data);
         
         // Handle auto-generate password
         if (!empty($data['auto_generate_password'])) {
-            // Generate a random password
             $data['password'] = \Str::random(12);
         }
         
         // If password is still not set, generate one
         if (empty($data['password'])) {
             $data['password'] = \Str::random(12);
+        } else {
+            // Hash the password if it was provided by user
+            $data['password'] = bcrypt($data['password']);
         }
-        
-        // If company_admin user (doesn't have empty company_id), auto-assign their company
+
+        // If company_admin user, auto-assign their company
         if (auth()->user()?->hasRole('company_admin') && auth()->user()?->company_id) {
             $data['company_id'] = auth()->user()->company_id;
         }
-        
-        // Remove auto_generate_password from data - keep roles for afterCreate
+
+        // Remove non-database fields
+        unset($data['roles']);
         unset($data['auto_generate_password']);
+        unset($data['password_confirmation']); // Not a database field
         
-        \Log::info('=== mutateFormDataBeforeCreate COMPLETED ===', [
-            'final_data' => array_merge($data, ['password' => '***']),
-        ]);
+        \Log::info('CreateUser - Data to save:', $data);
         
         return $data;
     }
 
     protected function afterCreate(): void
     {
-        \Log::info('=== afterCreate CALLED ===', [
-            'record_exists' => isset($this->record),
-            'record_email' => $this->record->email ?? 'N/A',
-            'record_id' => $this->record->id ?? 'N/A',
-        ]);
-        
-        // Get the role from the form data - it was submitted with the form
-        $roleToAssign = request()->input('roles');
-        
-        \Log::info('After create - assigning role:', [
-            'user_email' => $this->record->email,
-            'roleToAssign' => $roleToAssign,
+        \Log::info('CreateUser - After create:', [
             'user_id' => $this->record->id,
-            'request_all' => request()->all(),
+            'role' => $this->roleToAssign,
         ]);
         
-        if (!empty($roleToAssign)) {
+        if (!empty($this->roleToAssign)) {
             try {
-                // Use the exact same approach as the seeder - syncRoles
-                $this->record->syncRoles([$roleToAssign]);
-                
-                // Clear permission cache immediately
+                $this->record->syncRoles([$this->roleToAssign]);
                 app()['cache']->forget('spatie.permission.cache');
                 
-                \Log::info('Role assigned successfully:', [
-                    'user_email' => $this->record->email,
+                \Log::info('CreateUser - Role assigned:', [
                     'user_id' => $this->record->id,
-                    'role' => $roleToAssign
+                    'role' => $this->roleToAssign
                 ]);
             } catch (\Exception $e) {
-                \Log::error('Failed to assign role:', [
-                    'user_email' => $this->record->email,
+                \Log::error('CreateUser - Failed to assign role:', [
                     'user_id' => $this->record->id,
-                    'role' => $roleToAssign,
+                    'role' => $this->roleToAssign,
                     'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
                 ]);
             }
         } else {
-            \Log::warning('No role to assign for user: ' . $this->record->email);
+            \Log::warning('CreateUser - No role provided');
         }
     }
 
