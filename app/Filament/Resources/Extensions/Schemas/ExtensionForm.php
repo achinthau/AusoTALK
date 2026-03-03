@@ -76,7 +76,7 @@ class ExtensionForm
                 Hidden::make('context')
                     ->default(fn ($get) => self::getContextForCompany($get)),
                 Hidden::make('status')
-                    ->default('ACTIVE'),
+                    ->default('0'),
                 Hidden::make('exten_type')
                     ->default(fn ($get) => self::getExtensionTypeName($get)),
                 Hidden::make('updatedby')

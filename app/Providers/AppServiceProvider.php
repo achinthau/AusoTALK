@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
-use Filament\Actions\Exports\Models\Export;
+use App\Models\User;
+use App\Observers\UserObserver;
 use App\Policies\ExportPolicy;
 use App\Services\AusoApiManager;
+use Filament\Actions\Exports\Models\Export;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,5 +28,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Export::class, ExportPolicy::class);
+        User::observe(UserObserver::class);
     }
 }
