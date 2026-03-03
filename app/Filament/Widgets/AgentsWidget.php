@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Models\Company;
 use App\Models\User;
 use Filament\Widgets\Widget;
+use Illuminate\Support\Facades\Redis;
 
 class AgentsWidget extends Widget
 {
@@ -18,11 +19,29 @@ class AgentsWidget extends Widget
 
     public ?int $selectedCompanyId = null;
 
+    /**
+     * Store agent on-call status for reactive updates
+     */
+    public array $agentOnCallStatus = [];
+
     public function mount(): void
     {
         // Set default to user's company
         if (auth()->user()?->company_id) {
             $this->selectedCompanyId = auth()->user()->company_id;
+        }
+
+        $this->initializeAgentStatus();
+    }
+
+    /**
+     * Initialize agent on-call status from Redis
+     */
+    private function initializeAgentStatus(): void
+    {
+        $this->agentOnCallStatus = [];
+        foreach ($this->getAgents() as $agent) {
+            $this->agentOnCallStatus[$agent->id] = $this->isAgentOnCall($agent);
         }
     }
 
@@ -63,5 +82,31 @@ class AgentsWidget extends Widget
             ->when($companyId, fn ($query) => $query->where('company_id', $companyId))
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * Check if an agent is currently on a call using Redis.
+     */
+    public function isAgentOnCall(User $agent): bool
+    {
+        $company = $agent->company;
+        if (! $company) {
+            return false;
+        }
+
+        $redis = Redis::connection()->client();
+        $redis->select(1);
+
+        $key = "agent_on_call-{$company->context}-{$agent->id}";
+
+        return (bool) $redis->exists($key);
+    }
+
+    /**
+     * Update agent status when call starts/ends (called from WebSocket)
+     */
+    public function updateAgentStatus(int $userId, bool $isOnCall): void
+    {
+        $this->agentOnCallStatus[$userId] = $isOnCall;
     }
 }

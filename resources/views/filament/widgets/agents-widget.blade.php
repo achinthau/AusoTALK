@@ -25,9 +25,16 @@
     </div>
 
     <!-- Agents List -->
-    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; width: 100%; max-width: 100%;">
+    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; width: 100%; max-width: 100%;" id="agents-container">
         @forelse($this->getAgents() as $agent)
-            <div style="width: calc(16.666% - 0.625rem); display: flex; align-items: flex-start; gap: 1.5rem; border: 3px solid #c1c1c1; border-radius: 1.8rem;" class="shadow p-4 transition-all duration-200 {{ $agent->is_logged_in ? 'bg-green-50' : 'bg-gray-50' }}" data-agent-id="{{ $agent->id }}">
+            @php
+                $isOnCall = $this->agentOnCallStatus[$agent->id] ?? false;
+            @endphp
+            <div 
+                style="width: calc(16.666% - 0.625rem); display: flex; align-items: flex-start; gap: 1.5rem; border: 3px solid {{ $isOnCall ? '#16a34a' : '#c1c1c1' }}; border-radius: 1.8rem;" 
+                class="shadow p-4 transition-all duration-200 {{ $agent->is_logged_in ? 'bg-green-50' : 'bg-gray-50' }} agent-item" 
+                data-agent-id="{{ $agent->id }}"
+            >
                 <!-- Left: User Avatar -->
                 <div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center;">
                     <svg style="width: 2.5rem; height: 2.5rem; margin-top: 0.25rem; margin-left: 0.25rem; color: #2ba1ef;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.5 4.842C15.976 4.337 14.146 4 12 4c-2.145 0-3.976.337-5.5.842m11 0c3.021 1 4.835 2.66 5.5 3.658L20.5 11l-3-2V4.842zm-11 0c-3.021 1-4.835 2.66-5.5 3.658L3.5 11l3-2V4.842z"></path><path fill="currentColor" fill-rule="evenodd" d="M10 6a1 1 0 0 1 1 1v2h2V7a1 1 0 1 1 2 0v2.586l5.121 5.121A3 3 0 0 1 21 16.828V18a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-1.172a3 3 0 0 1 .879-2.12L9 9.585V7a1 1 0 0 1 1-1zm2 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" clip-rule="evenodd"></path></svg>
@@ -44,7 +51,7 @@
                     @if($agent->extension)
                         <p class="text-xs text-gray-600">Ext: {{ $agent->extension }}</p>
                     @else
-                        <p class="text-xs text-gray-400"></p>
+                        <p class="text-xs text-gray-400 text-center">-----</p>
                     @endif
                 </div>
             </div>
@@ -54,4 +61,6 @@
             </div>
         @endforelse
     </div>
+
+    <!-- No additional script needed - polling is handled by app.js agent-polling module -->
 </x-filament-widgets::widget>
