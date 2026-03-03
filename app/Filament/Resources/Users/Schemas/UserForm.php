@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users\Schemas;
 
 use App\Models\Company;
+use App\Models\Extension;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -27,6 +28,22 @@ class UserForm
                     ->nullable()
                     ->tel()
                     ->maxLength(255),
+                Select::make('extension')
+                    ->label('Extension')
+                    ->options(function ($get) {
+                        $companyId = $get('company_id');
+                        if (! $companyId) {
+                            return [];
+                        }
+
+                        return Extension::where('company_id', $companyId)
+                            ->where('status', 0)
+                            ->pluck('number', 'number')
+                            ->toArray();
+                    })
+                    ->searchable()
+                    ->nullable()
+                    ->live(),
                 TextInput::make('nic')
                     ->label('NIC')
                     ->nullable()
@@ -64,7 +81,7 @@ class UserForm
                     ->hidden(function (string $operation, $get) {
                         return $operation === 'create' && $get('auto_generate_password');
                     })
-                    ->dehydrated(fn($state) => filled($state))
+                    ->dehydrated(fn ($state) => filled($state))
                     ->maxLength(255),
                 TextInput::make('password_confirmation')
                     ->password()

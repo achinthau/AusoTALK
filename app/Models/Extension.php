@@ -16,9 +16,6 @@ class Extension extends Model
         'status',
         'exten_type',
         'updatedby',
-        'api_status',
-        'api_payload',
-        'api_response',
     ];
 
     protected $hidden = [

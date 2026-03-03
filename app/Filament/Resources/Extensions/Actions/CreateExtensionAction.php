@@ -58,9 +58,9 @@ class CreateExtensionAction extends CreateAction
                     }
 
                     // Store API response in data for reference
-                    $data['api_status'] = $response['status'] ?? null;
-                    $data['api_payload'] = $apiData;
-                    $data['api_response'] = $response;
+                    // $data['api_status'] = $response['status'] ?? null;
+                    // $data['api_payload'] = $apiData;
+                    // $data['api_response'] = $response;
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('Failed to create extension in Auso API', [
                         'error' => $e->getMessage(),
