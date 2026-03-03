@@ -104,7 +104,14 @@ class UserForm
                         ];
                     })
                     ->required()
-                    ->live(),
+                    ->dehydrated(true)
+                    ->live()
+                    ->afterStateHydrated(function ($component, $state, $record) {
+                        // Pre-fill with current role if editing
+                        if ($record && empty($state)) {
+                            $component->state($record->roles->first()?->name);
+                        }
+                    }),
                 Select::make('company_id')
                     ->label('Company')
                     ->options(Company::pluck('name', 'id'))

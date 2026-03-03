@@ -9,19 +9,21 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Route;
 
-function notifyDashboard(): void
+function broadcastAgentStatus(int $userId, int $companyId, bool $isOnCall): void
 {
-    $stats = app(DashboardStatisticsService::class);
-
-    Http::timeout(2)->post('http://localhost:'.config('services.ws.port').'/broadcast', [
-        'secret' => config('services.ws.secret'),
-        'event' => 'statistics-updated',
-        'data' => [
-            'calls' => $stats->getCallStatistics(),
-            'queue' => $stats->getQueueStatistics(),
-            'ongoing' => $stats->getOngoingCallCount(),
-        ],
-    ]);
+    try {
+        Http::timeout(2)->post('http://localhost:'.config('services.ws.port').'/broadcast', [
+            'secret' => config('services.ws.secret'),
+            'event' => 'agent-status-updated',
+            'data' => [
+                'userId' => $userId,
+                'companyId' => $companyId,
+                'isOnCall' => $isOnCall,
+            ],
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error broadcasting agent status: '.$e->getMessage());
+    }
 }
 
 Route::match(['GET', 'POST'], '/pbx-call-answered', function (StoreAnsweredCall $request) {
@@ -41,7 +43,8 @@ Route::match(['GET', 'POST'], '/pbx-call-answered', function (StoreAnsweredCall 
     $redis->set('agent_on_call-'.$tenant.'-'.$agent->id, $request['dnis']);
     $redis->set('call-'.$tenant.'-'.$request['dnis'], $agent->id);
 
-    // notifyDashboard();
+    // Broadcast agent status update to WebSocket
+    broadcastAgentStatus($agent->id, $agent->company_id, true);
 
     return response()->json(['status' => 'ok']);
 });
@@ -63,12 +66,43 @@ Route::match(['GET', 'POST'], '/pbx-call-disconnected', function (StoreAnsweredC
     $redis->del('agent_on_call-'.$tenant.'-'.$agent->id);
     $redis->del('call-'.$tenant.'-'.$request['dnis']);
 
-    // notifyDashboard();
+    // Broadcast agent status update to WebSocket
+    broadcastAgentStatus($agent->id, $agent->company_id, false);
 
     return response()->json(['status' => 'ok']);
 });
 
+// Get agent on-call status (public endpoint for polling)
+Route::get('/agents/{agentId}/status', function ($agentId) {
+    $agent = User::find($agentId);
+    if (! $agent) {
+        return response()->json(['error' => 'Agent not found'], 404);
+    }
+
+    $isOnCall = false;
+    if ($agent->company) {
+        $redis = Redis::connection()->client();
+        $redis->select(1);
+        $isOnCall = (bool) $redis->exists("agent_on_call-{$agent->company->context}-{$agent->id}");
+    }
+
+    return response()->json([
+        'agentId' => $agent->id,
+        'isOnCall' => $isOnCall,
+    ]);
+});
+
+// Get call statistics (public endpoint for polling)
+Route::get('/call-statistics', function () {
+    $service = app(DashboardStatisticsService::class);
+
+    return response()->json([
+        'calls' => $service->getCallStatistics(),
+        'queue' => $service->getQueueStatistics(),
+        'ongoing' => $service->getOngoingCallCount(),
+    ]);
+});
+
 // Authenticated routes for dashboard statistics (fallback when WebSocket is unavailable)
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/dashboard/statistics', [DashboardController::class, 'getStatistics']);
-});
+    Route::get('/dashboard/statistics', [DashboardController::class, 'getStatistics']);});
