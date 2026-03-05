@@ -46,8 +46,13 @@ class MissedCallsTable
                 TextColumn::make('recalled_status')
                     ->label('Recalled Status')
                     ->sortable()
+                    ->alignment('center')
                     ->formatStateUsing(function ($state): string {
-                        return $state == 1 ? '✓' : '✗';
+                        if ($state == 1) {
+                            return '<span style="background-color: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; min-width: 30px; text-align: center;">✓</span>';
+                        }
+
+                        return '<span style="background-color: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; min-width: 30px; text-align: center;">✗</span>';
                     })
                     ->html(),
 
