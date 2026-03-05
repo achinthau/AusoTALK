@@ -28,8 +28,12 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandName('AusoTALK Admin')
+            ->brandLogo(asset('images/logo.png'))
+            ->favicon(asset('favicon.ico'))
             ->colors([
-                'primary' => Color::Amber,
+                // 'primary' => Color::hex('#1e3a8a'),
+                'primary' => Color::Indigo,
             ])
             ->databaseNotifications()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
@@ -62,6 +66,10 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => auth()->check() && auth()->user()->company
                     ? '<meta name="tenant-context" content="'.e(auth()->user()->company->context).'">'
                     : '',
+            )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => '<style>.fi-simple-header-heading { display: none; }.fi-simple-layout .fi-logo { height: 4rem !important; }.fi-topbar .fi-logo { height: 2rem !important; }</style>',
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
