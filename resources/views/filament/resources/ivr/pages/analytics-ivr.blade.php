@@ -41,7 +41,8 @@
                     <div style="background: white; border-radius: 1rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); border: 1px solid #f3f4f6; overflow: hidden; padding-top: 24px;">
                         <div style="background: rgba(249, 250, 251, 0.5); padding: 16px 24px; border-bottom: 1px solid #f3f4f6;">
                             <h3 style="font-size: 1.125rem; font-weight: bold; color: #111827;">
-                                📞 DNIS: {{ $dnis }}
+                                {{-- 📞 Destination: {{ $dnis }} --}}
+                                📞  {{ $dnis }}
                             </h3>
                         </div>
                         <div style="padding: 24px;">
