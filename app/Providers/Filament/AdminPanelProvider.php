@@ -32,7 +32,8 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo(asset('images/logo.png'))
             ->favicon(asset('favicon.ico'))
             ->colors([
-                'primary' => Color::Amber,
+                // 'primary' => Color::hex('#1e3a8a'),
+                'primary' => Color::Indigo,
             ])
             ->databaseNotifications()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
