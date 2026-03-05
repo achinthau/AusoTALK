@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class AbandonedNew extends Model
 {
-    protected $connection = 'mysql-old';
+    protected $connection = 'mysql-voice';
 
     protected $table = 'au_abandoned_report';
 
