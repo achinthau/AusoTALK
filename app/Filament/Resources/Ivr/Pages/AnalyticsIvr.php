@@ -27,16 +27,16 @@ class AnalyticsIvr extends Page implements HasForms
         $this->endDate = request()->query('endDate', now()->toDateString());
     }
 
-    public function getHeaderActions(): array
-    {
-        return [
-            \Filament\Actions\Action::make('back')
-                ->label('Back to Report')
-                ->icon('heroicon-m-arrow-left')
-                ->url(static::$resource::getUrl())
-                ->color('gray'),
-        ];
-    }
+    // public function getHeaderActions(): array
+    // {
+    //     return [
+    //         \Filament\Actions\Action::make('back')
+    //             ->label('Back to Report')
+    //             ->icon('heroicon-m-arrow-left')
+    //             ->url(static::$resource::getUrl())
+    //             ->color('gray'),
+    //     ];
+    // }
 
     public function getDnisData(): array
     {

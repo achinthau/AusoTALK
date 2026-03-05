@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     <div style="display: flex; flex-direction: column; gap: 24px;">
         <!-- Date Range Selector -->
-        <form method="GET" style="background: linear-gradient(to right, #eff6ff, #ecfdf5); border: 2px solid #3b82f6; border-radius: 12px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-wrap: nowrap; align-items: center; gap: 12px;">
+        <form method="GET" style="background: linear-gradient(to right, #eff6ff, #ecfdf5); border: 2px solid #a0bff2; border-radius: 12px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-wrap: nowrap; align-items: center; gap: 12px;">
             <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
                 <label for="startDate" style="color: #1e40af; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin: 0;">
                     📅 {{ __('Start Date') }}
