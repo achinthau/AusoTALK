@@ -16,7 +16,7 @@ class MissedCallsResource extends Resource
 {
     protected static ?string $model = AbandonedNew::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhone;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhoneXMark;
 
     protected static ?string $navigationLabel = 'Missed Calls Report';
 

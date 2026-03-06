@@ -17,7 +17,7 @@ class IvrResource extends Resource
 {
     protected static ?string $model = AuIvrCall::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhone;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowTrendingUp;
 
     protected static ?string $navigationLabel = 'IVR Report';
 

@@ -7,6 +7,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -36,6 +37,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Indigo,
             ])
             ->databaseNotifications()
+            ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -43,9 +45,12 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->navigationGroups([
-                'PBC',
-                'Reports',
-                'Settings',
+                NavigationGroup::make()
+                    ->label('PBX'),
+                NavigationGroup::make()
+                    ->label('Reports'),
+                NavigationGroup::make()
+                    ->label('Settings'),
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -69,11 +74,44 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<style>.fi-simple-header-heading { display: none; }.fi-simple-layout .fi-logo { height: 4rem !important; }.fi-topbar .fi-logo { height: 2rem !important; }</style>',
+                fn (): string => '<style>.fi-simple-header-heading { display: none; }.fi-simple-layout .fi-logo { height: 4rem !important; }.fi-topbar .fi-logo { height: 2rem !important; }.fi-sidebar { background-color: #e5e7eb !important; } .dark .fi-sidebar { background-color: #111827 !important; }</style>',
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): string => '<script type="module" src="'.Vite::asset('resources/js/app.js').'"></script>',
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => '<script>
+                    function collapseNavigationGroups() {
+                        const buttons = document.querySelectorAll(".fi-sidebar-group > button");
+                        buttons.forEach((button) => {
+                            const ariaExpanded = button.getAttribute("aria-expanded");
+                            if (ariaExpanded === "true") {
+                                button.click();
+                            }
+                        });
+                    }
+                    
+                    // Run immediately
+                    setTimeout(collapseNavigationGroups, 100);
+                    setTimeout(collapseNavigationGroups, 500);
+                    
+                    // Run on DOM ready
+                    if (document.readyState === "loading") {
+                        document.addEventListener("DOMContentLoaded", collapseNavigationGroups);
+                    }
+                    
+                    // Watch for changes
+                    const observer = new MutationObserver(() => {
+                        collapseNavigationGroups();
+                    });
+                    
+                    const sidebar = document.querySelector(".fi-sidebar");
+                    if (sidebar) {
+                        observer.observe(sidebar, { childList: true, subtree: true });
+                    }
+                </script>',
             );
     }
 }
