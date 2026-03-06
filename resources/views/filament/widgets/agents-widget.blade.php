@@ -100,7 +100,7 @@
                         <!-- Right: Name and Extension -->
                         <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem;">
                             <!-- Name -->
-                            <h3 class="font-semibold text-sm text-gray-900 truncate">{{ $agent->name }}</h3>
+                            <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; flex: 1; margin: 0;" class="font-semibold text-sm text-gray-900">{{ $agent->name }}</h3>
                             
                             <!-- Extension -->
                             @if($agent->extension)
