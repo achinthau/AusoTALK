@@ -78,10 +78,16 @@ class AgentsWidget extends Widget
     public function getBranches(): \Illuminate\Database\Eloquent\Collection
     {
         $user = auth()->user();
+
+        // If selectedCompanyId is 0, it means "All Companies" is selected, so return all branches
+        if ($this->selectedCompanyId === 0 || $this->selectedCompanyId === '0') {
+            return Branch::orderBy('name')->get();
+        }
+
         $companyId = $this->selectedCompanyId ?? $user?->company_id;
 
         if (! $companyId) {
-            return collect();
+            return Branch::whereNull('company_id')->orderBy('name')->get();
         }
 
         return Branch::where('company_id', $companyId)
