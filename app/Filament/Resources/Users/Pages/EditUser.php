@@ -23,7 +23,7 @@ class EditUser extends EditRecord
     {
         // Load the user's role
         $data['roles'] = $this->record->roles->first()?->name;
-        
+
         // Ensure all user attributes are present
         $data['name'] = $this->record->name;
         $data['email'] = $this->record->email;
@@ -41,29 +41,22 @@ class EditUser extends EditRecord
         // Store role before unsetting so it can be used in afterSave
         $this->roleToAssign = $data['roles'] ?? null;
 
-        \Log::info('EditUser - Data received:', $data);
-
         // If company user (logged in user has company_id), force their company_id
         if (auth()->user()?->company_id) {
             $data['company_id'] = auth()->user()->company_id;
         }
 
-        // Handle password - hash if provided, remove both password fields if empty
+        // Handle password - remove if empty (leave unchanged), otherwise let Hashed cast handle encryption
         if (empty($data['password'])) {
             unset($data['password']);
-        } else {
-            // Hash the password if provided
-            $data['password'] = bcrypt($data['password']);
         }
-        
+
         // Always remove password_confirmation - it's not a database field
         unset($data['password_confirmation']);
-        
+
         // Remove roles from data - it's not a model attribute, handled in afterSave
         unset($data['roles']);
 
-        \Log::info('EditUser - Data to save:', $data);
-        
         return $data;
     }
 
@@ -71,10 +64,6 @@ class EditUser extends EditRecord
     {
         // Assign the stored role
         if ($this->roleToAssign) {
-            \Log::info('EditUser - Assigning role:', [
-                'user_id' => $this->record->id,
-                'role' => $this->roleToAssign,
-            ]);
             $this->record->syncRoles([$this->roleToAssign]);
         }
     }

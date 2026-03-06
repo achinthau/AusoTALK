@@ -4,7 +4,6 @@ namespace App\Filament\Resources\Users\Schemas;
 
 use App\Models\Company;
 use App\Models\Extension;
-use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -26,8 +25,17 @@ class UserForm
                 TextInput::make('phone')
                     ->label('Phone')
                     ->nullable()
-                    ->tel()
-                    ->maxLength(255),
+                    ->inputMode('numeric')
+                    ->minLength(10)
+                    ->maxLength(10)
+                    ->regex('/^[0-9]{10}$/')
+                    ->unique(ignoreRecord: true)
+                    ->validationMessages([
+                        'min' => 'Phone number must be exactly 10 digits.',
+                        'max' => 'Phone number must be exactly 10 digits.',
+                        'regex' => 'Phone number must be exactly 10 numeric digits.',
+                        'unique' => 'This phone number is already in use.',
+                    ]),
                 Select::make('extension')
                     ->label('Extension')
                     ->options(function ($get) {
@@ -47,7 +55,7 @@ class UserForm
                 TextInput::make('nic')
                     ->label('NIC')
                     ->nullable()
-                    ->maxLength(255),
+                    ->maxLength(15),
                 Select::make('gender')
                     ->label('Gender')
                     ->options([
@@ -60,42 +68,22 @@ class UserForm
                     ->label('Address')
                     ->nullable()
                     ->maxLength(255),
-                Checkbox::make('auto_generate_password')
-                    ->label('Auto Generate Password')
-                    ->live()
-                    ->dehydrated(false)
-                    ->visible(fn (string $operation) => $operation === 'create'),
                 TextInput::make('password')
                     ->password()
-                    ->nullable()
-                    ->required(function (string $operation, $get) {
-                        if ($operation === 'create' && $get('auto_generate_password')) {
-                            return false;
-                        }
-
-                        return $operation === 'create';
-                    })
+                    ->required(fn (string $operation) => $operation === 'create')
                     ->placeholder(function (string $operation) {
                         return $operation === 'edit' ? 'Leave blank to keep current password' : 'Password';
-                    })
-                    ->hidden(function (string $operation, $get) {
-                        return $operation === 'create' && $get('auto_generate_password');
                     })
                     ->dehydrated(fn ($state) => filled($state))
                     ->maxLength(255),
                 TextInput::make('password_confirmation')
                     ->password()
                     ->label('Confirm Password')
-                    ->required(function (string $operation, $get) {
-                        if ($operation === 'create' && $get('auto_generate_password')) {
-                            return false;
-                        }
-
-                        return ! empty($get('password'));
-                    })
-                    ->hidden(function (string $operation, $get) {
-                        return ($operation === 'create' && $get('auto_generate_password')) || empty($get('password'));
-                    })
+                    ->required(fn (string $operation, $get) => ! empty($get('password')))
+                    ->same('password')
+                    ->validationMessages([
+                        'same' => 'Passwords do not match.',
+                    ])
                     ->dehydrated(false)
                     ->maxLength(255),
                 Select::make('roles')
