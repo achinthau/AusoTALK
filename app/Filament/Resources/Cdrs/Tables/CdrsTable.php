@@ -8,11 +8,13 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Storage;
 
 class CdrsTable
 {
@@ -77,6 +79,21 @@ class CdrsTable
                         'info' => 'NO ANSWER',
                     ]),
 
+                ViewColumn::make('recording')
+                    ->label('Recording')
+                    ->view('filament.tables.columns.recording-player')
+                    ->getStateUsing(function (Cdr $record): array {
+                        $filepath = 'monitor_1/'.$record->uniqueid.'.wav';
+                        $hasFile = Storage::disk('public')->exists($filepath) || file_exists(storage_path('app/public/'.$filepath));
+
+                        return [
+                            'uniqueid' => $record->uniqueid,
+                            'hasFile' => $hasFile,
+                            'filepath' => $filepath,
+                            'url' => $hasFile ? asset('storage/'.$filepath) : null,
+                        ];
+                    }),
+
                 TextColumn::make('dcontext')
                     ->label('Context')
                     ->sortable()
@@ -133,46 +150,46 @@ class CdrsTable
                         ->icon('heroicon-o-arrow-down-tray')
                         ->action(function (BulkAction $action): void {
                             $records = $action->getSelectedRecords();
-                            
+
                             // Get column map
                             $columnMap = collect(CdrsExporter::getColumns())
                                 ->mapWithKeys(fn (\Filament\Actions\Exports\ExportColumn $column) => [
                                     $column->getName() => $column->getLabel(),
                                 ])
                                 ->all();
-                            
+
                             // Create export record
                             $export = \Filament\Actions\Exports\Models\Export::make([
                                 'user_id' => auth()->id(),
                                 'exporter' => CdrsExporter::class,
                                 'total_rows' => $records->count(),
                             ]);
-                            
+
                             $exporter = $export->getExporter(columnMap: $columnMap, options: []);
                             $export->file_disk = $exporter->getFileDisk();
                             $export->file_name = $exporter->getFileName($export);
                             $export->save();
-                            
+
                             // Dispatch export job using Filament's internal pattern
                             $columnMap = collect(CdrsExporter::getColumns())
                                 ->mapWithKeys(fn (\Filament\Actions\Exports\ExportColumn $column) => [
                                     $column->getName() => $column->getLabel(),
                                 ])
                                 ->all();
-                            
+
                             // Get the query for selected records only
                             $query = $records->toQuery();
                             $serializedQuery = \AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade::serialize($query);
-                            
+
                             $formats = [ExportFormat::Csv, ExportFormat::Xlsx];
                             $hasXlsx = in_array(ExportFormat::Xlsx, $formats);
                             $hasCsv = in_array(ExportFormat::Csv, $formats);
-                            
+
                             $makeCreateXlsxFileJob = fn () => new \Filament\Actions\Exports\Jobs\CreateXlsxFile(
                                 export: $export,
                                 columnMap: $columnMap,
                             );
-                            
+
                             $jobs = [
                                 \Illuminate\Support\Facades\Bus::batch([
                                     app(\Filament\Actions\Exports\Jobs\PrepareCsvExport::class, [
@@ -184,12 +201,12 @@ class CdrsTable
                                     ]),
                                 ])->allowFailures(),
                             ];
-                            
+
                             // Add CreateXlsxFile before completion if only XLSX
-                            if ($hasXlsx && !$hasCsv) {
+                            if ($hasXlsx && ! $hasCsv) {
                                 $jobs[] = $makeCreateXlsxFileJob();
                             }
-                            
+
                             // Add ExportCompletion
                             $jobs[] = app(\Filament\Actions\Exports\Jobs\ExportCompletion::class, [
                                 'authGuard' => 'web',
@@ -198,17 +215,17 @@ class CdrsTable
                                 'formats' => $formats,
                                 'options' => [],
                             ]);
-                            
+
                             // Add CreateXlsxFile after completion if both CSV and XLSX
                             if ($hasXlsx && $hasCsv) {
                                 $jobs[] = $makeCreateXlsxFileJob();
                             }
-                            
+
                             \Illuminate\Support\Facades\Bus::chain($jobs)->dispatch();
-                            
+
                             \Filament\Notifications\Notification::make()
                                 ->title('Export Started')
-                                ->body('Exporting ' . $records->count() . ' selected record(s)...')
+                                ->body('Exporting '.$records->count().' selected record(s)...')
                                 ->success()
                                 ->send();
                         })
