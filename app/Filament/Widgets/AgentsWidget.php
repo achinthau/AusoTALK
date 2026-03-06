@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Branch;
 use App\Models\Company;
 use App\Models\User;
 use Filament\Widgets\Widget;
@@ -19,6 +20,8 @@ class AgentsWidget extends Widget
 
     public ?int $selectedCompanyId = null;
 
+    public ?int $selectedBranchId = null;
+
     /**
      * Store agent on-call status for reactive updates
      */
@@ -29,6 +32,11 @@ class AgentsWidget extends Widget
         // Set default to user's company
         if (auth()->user()?->company_id) {
             $this->selectedCompanyId = auth()->user()->company_id;
+        }
+
+        // Set default to user's branch if available
+        if (auth()->user()?->branch_id) {
+            $this->selectedBranchId = auth()->user()->branch_id;
         }
 
         $this->initializeAgentStatus();
@@ -67,21 +75,117 @@ class AgentsWidget extends Widget
         return collect();
     }
 
-    public function getAgents(): \Illuminate\Database\Eloquent\Collection
+    public function getBranches(): \Illuminate\Database\Eloquent\Collection
     {
-        // If "All" is selected (selectedCompanyId is 0 or null), show all agents
-        // Otherwise, use selected company or default to user's company
+        $user = auth()->user();
+
+        // If selectedCompanyId is 0, it means "All Companies" is selected, so return all branches
         if ($this->selectedCompanyId === 0 || $this->selectedCompanyId === '0') {
-            $companyId = null;
-        } else {
-            $companyId = $this->selectedCompanyId ?? auth()->user()->company_id;
+            return Branch::orderBy('name')->get();
         }
 
-        return User::query()
-            ->whereHas('roles', fn ($query) => $query->where('name', 'agent'))
-            ->when($companyId, fn ($query) => $query->where('company_id', $companyId))
+        $companyId = $this->selectedCompanyId ?? $user?->company_id;
+
+        if (! $companyId) {
+            return Branch::whereNull('company_id')->orderBy('name')->get();
+        }
+
+        return Branch::where('company_id', $companyId)
             ->orderBy('name')
             ->get();
+    }
+
+    public function getAgents(): \Illuminate\Database\Eloquent\Collection
+    {
+        $user = auth()->user();
+
+        // For non-super-admins, filter by branch
+        if (! $user?->hasRole('super_admin') && $this->selectedBranchId) {
+            return User::query()
+                ->where('branch_id', $this->selectedBranchId)
+                ->orderBy('name')
+                ->get();
+        }
+
+        // For super admins, filter by company if selected
+        if ($user?->hasRole('super_admin')) {
+            if ($this->selectedCompanyId === 0 || $this->selectedCompanyId === '0') {
+                $companyId = null;
+            } else {
+                $companyId = $this->selectedCompanyId ?? $user->company_id;
+            }
+
+            return User::query()
+                ->when($companyId, fn ($query) => $query->where('company_id', $companyId))
+                ->orderBy('name')
+                ->get();
+        }
+
+        // Default to user's branch
+        if ($user?->branch_id) {
+            return User::query()
+                ->where('branch_id', $user->branch_id)
+                ->orderBy('name')
+                ->get();
+        }
+
+        return collect();
+    }
+
+    public function getExtensionsByDepartment(): array
+    {
+        $user = auth()->user();
+
+        // Determine which company_id to use for filtering
+        $companyId = null;
+        if ($user?->hasRole('super_admin')) {
+            if ($this->selectedCompanyId === 0 || $this->selectedCompanyId === '0') {
+                $companyId = null;
+            } else {
+                $companyId = $this->selectedCompanyId ?? $user->company_id;
+            }
+        } else {
+            $companyId = $user?->company_id;
+        }
+
+        // Determine which branch_id to use for filtering
+        $branchId = null;
+        if ($this->selectedBranchId) {
+            $branchId = $this->selectedBranchId;
+        } elseif (! $user?->hasRole('super_admin') && $user?->branch_id) {
+            $branchId = $user->branch_id;
+        }
+
+        // Get agents grouped by department
+        $agentsQuery = User::query();
+
+        if ($companyId) {
+            $agentsQuery->where('company_id', $companyId);
+        }
+
+        if ($branchId) {
+            $agentsQuery->where('branch_id', $branchId);
+        }
+
+        $agents = $agentsQuery
+            ->with(['department'])
+            ->orderBy('name')
+            ->get();
+
+        $result = [];
+
+        foreach ($agents as $agent) {
+            $departmentName = $agent->department?->name ?? 'Unassigned';
+            if (! isset($result[$departmentName])) {
+                $result[$departmentName] = [];
+            }
+            $result[$departmentName][] = $agent;
+        }
+
+        // Sort departments alphabetically
+        ksort($result);
+
+        return $result;
     }
 
     /**

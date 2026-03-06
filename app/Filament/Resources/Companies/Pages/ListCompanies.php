@@ -14,8 +14,7 @@ class ListCompanies extends ListRecords
     {
         return [
             CreateAction::make()
-                ->modal()
-                ->successRedirectUrl(fn ($record) => CompanyResource::getUrl('edit', ['record' => $record])),
+                ->modal(),
         ];
     }
 }

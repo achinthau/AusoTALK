@@ -18,8 +18,9 @@ class DepartmentForm
                     ->label('Company')
                     ->options(Company::pluck('name', 'id'))
                     ->required()
+                    ->disabled(fn () => auth()->user()?->company_id !== null)
+                    ->dehydrated(true)
                     ->live()
-                    ->hidden(fn () => auth()->user()?->company_id !== null)
                     ->default(fn () => auth()->user()?->company_id),
                 Select::make('branch_id')
                     ->label('Branch')

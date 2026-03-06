@@ -14,8 +14,7 @@ class ListDepartments extends ListRecords
     {
         return [
             CreateAction::make()
-                ->modal()
-                ->successRedirectUrl(fn ($record) => DepartmentResource::getUrl('edit', ['record' => $record])),
+                ->modal(),
         ];
     }
 }

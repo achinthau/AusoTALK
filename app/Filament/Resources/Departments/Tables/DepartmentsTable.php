@@ -29,8 +29,11 @@ class DepartmentsTable
             ->filters([
                 //
             ])
+            ->recordUrl(false)
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->modal()
+                    ->modalHeading('Edit Department'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

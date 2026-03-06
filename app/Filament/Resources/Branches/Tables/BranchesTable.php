@@ -28,8 +28,11 @@ class BranchesTable
             ->filters([
                 //
             ])
+            ->recordUrl(false)
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->modal()
+                    ->modalHeading('Edit Branch'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

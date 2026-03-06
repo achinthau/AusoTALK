@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\Departments;
 
-use App\Filament\Resources\Departments\Pages\CreateDepartment;
-use App\Filament\Resources\Departments\Pages\EditDepartment;
 use App\Filament\Resources\Departments\Pages\ListDepartments;
 use App\Filament\Resources\Departments\Schemas\DepartmentForm;
 use App\Filament\Resources\Departments\Tables\DepartmentsTable;
@@ -43,6 +41,7 @@ class DepartmentResource extends Resource
         if ($user && $user->company_id) {
             return $query->where('company_id', $user->company_id);
         }
+
         // Super admin sees all departments
         return $query;
     }
@@ -58,7 +57,6 @@ class DepartmentResource extends Resource
     {
         return [
             'index' => ListDepartments::route('/'),
-            'edit' => EditDepartment::route('/{record}/edit'),
         ];
     }
 }

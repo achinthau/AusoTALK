@@ -18,7 +18,8 @@ class BranchForm
                     ->options(Company::pluck('name', 'id'))
                     ->searchable()
                     ->required()
-                    ->hidden(fn () => auth()->user()?->company_id !== null)
+                    ->disabled(fn () => auth()->user()?->company_id !== null)
+                    ->dehydrated(true)
                     ->default(fn () => auth()->user()?->company_id),
                 TextInput::make('name')
                     ->required()

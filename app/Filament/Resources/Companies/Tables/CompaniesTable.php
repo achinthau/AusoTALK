@@ -20,15 +20,19 @@ class CompaniesTable
                 TextColumn::make('domain')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('master_email')
+                TextColumn::make('email')
+                    ->label('Email')
                     ->searchable(),
                 TextColumn::make('hotline'),
             ])
             ->filters([
                 //
             ])
+            ->recordUrl(false)
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->modal()
+                    ->modalHeading('Edit Company'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Models\Branch;
 use App\Models\Company;
+use App\Models\Department;
 use App\Models\Extension;
-use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -20,14 +21,27 @@ class UserForm
                     ->maxLength(255),
                 TextInput::make('email')
                     ->email()
+                    ->regex('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/')
                     ->required()
                     ->unique(ignoreRecord: true)
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->validationMessages([
+                        'regex' => 'Please enter a valid email address (e.g., user@example.com).',
+                    ]),
                 TextInput::make('phone')
                     ->label('Phone')
                     ->nullable()
-                    ->tel()
-                    ->maxLength(255),
+                    ->inputMode('numeric')
+                    ->minLength(10)
+                    ->maxLength(10)
+                    ->regex('/^[0-9]{10}$/')
+                    ->unique(ignoreRecord: true)
+                    ->validationMessages([
+                        'min' => 'Phone number must be exactly 10 digits.',
+                        'max' => 'Phone number must be exactly 10 digits.',
+                        'regex' => 'Phone number must be exactly 10 numeric digits.',
+                        'unique' => 'This phone number is already in use.',
+                    ]),
                 Select::make('extension')
                     ->label('Extension')
                     ->options(function ($get) {
@@ -47,7 +61,7 @@ class UserForm
                 TextInput::make('nic')
                     ->label('NIC')
                     ->nullable()
-                    ->maxLength(255),
+                    ->maxLength(15),
                 Select::make('gender')
                     ->label('Gender')
                     ->options([
@@ -60,42 +74,22 @@ class UserForm
                     ->label('Address')
                     ->nullable()
                     ->maxLength(255),
-                Checkbox::make('auto_generate_password')
-                    ->label('Auto Generate Password')
-                    ->live()
-                    ->dehydrated(false)
-                    ->visible(fn (string $operation) => $operation === 'create'),
                 TextInput::make('password')
                     ->password()
-                    ->nullable()
-                    ->required(function (string $operation, $get) {
-                        if ($operation === 'create' && $get('auto_generate_password')) {
-                            return false;
-                        }
-
-                        return $operation === 'create';
-                    })
+                    ->required(fn (string $operation) => $operation === 'create')
                     ->placeholder(function (string $operation) {
                         return $operation === 'edit' ? 'Leave blank to keep current password' : 'Password';
-                    })
-                    ->hidden(function (string $operation, $get) {
-                        return $operation === 'create' && $get('auto_generate_password');
                     })
                     ->dehydrated(fn ($state) => filled($state))
                     ->maxLength(255),
                 TextInput::make('password_confirmation')
                     ->password()
                     ->label('Confirm Password')
-                    ->required(function (string $operation, $get) {
-                        if ($operation === 'create' && $get('auto_generate_password')) {
-                            return false;
-                        }
-
-                        return ! empty($get('password'));
-                    })
-                    ->hidden(function (string $operation, $get) {
-                        return ($operation === 'create' && $get('auto_generate_password')) || empty($get('password'));
-                    })
+                    ->required(fn (string $operation, $get) => ! empty($get('password')))
+                    ->same('password')
+                    ->validationMessages([
+                        'same' => 'Passwords do not match.',
+                    ])
                     ->dehydrated(false)
                     ->maxLength(255),
                 Select::make('roles')
@@ -155,6 +149,97 @@ class UserForm
                         }
 
                         return false;
+                    }),
+                Select::make('branch_id')
+                    ->label('Branch')
+                    ->options(function ($get) {
+                        $user = auth()->user();
+                        $companyId = $get('company_id');
+
+                        // For company_admin users, use their company
+                        if ($user?->hasRole('company_admin') && ! $companyId) {
+                            $companyId = $user->company_id;
+                        }
+
+                        if (! $companyId) {
+                            return [];
+                        }
+
+                        return Branch::where('company_id', $companyId)
+                            ->pluck('name', 'id')
+                            ->toArray();
+                    })
+                    ->searchable()
+                    ->nullable()
+                    ->live()
+                    ->hidden(function ($get) {
+                        $user = auth()->user();
+                        $companyId = $get('company_id');
+
+                        // For company_admin users, use their company
+                        if ($user?->hasRole('company_admin') && ! $companyId) {
+                            $companyId = $user->company_id;
+                        }
+
+                        if (! $companyId) {
+                            return true;
+                        }
+
+                        // Check if company has any branches
+                        $hasBranches = Branch::where('company_id', $companyId)->exists();
+
+                        return ! $hasBranches;
+                    }),
+                Select::make('department_id')
+                    ->label('Department')
+                    ->options(function ($get) {
+                        $user = auth()->user();
+                        $companyId = $get('company_id');
+                        $branchId = $get('branch_id');
+
+                        // For company_admin users, use their company
+                        if ($user?->hasRole('company_admin') && ! $companyId) {
+                            $companyId = $user->company_id;
+                        }
+
+                        if (! $companyId) {
+                            return [];
+                        }
+
+                        // If branch is selected, get departments for that branch
+                        if ($branchId) {
+                            return Department::where('company_id', $companyId)
+                                ->where('branch_id', $branchId)
+                                ->pluck('name', 'id')
+                                ->toArray();
+                        }
+
+                        // If no branch selected, get company-level departments (where branch_id is null)
+                        return Department::where('company_id', $companyId)
+                            ->whereNull('branch_id')
+                            ->pluck('name', 'id')
+                            ->toArray();
+                    })
+                    ->searchable()
+                    ->nullable()
+                    ->live()
+                    ->hidden(function ($get) {
+                        $user = auth()->user();
+                        $companyId = $get('company_id');
+
+                        // For company_admin users, use their company
+                        if ($user?->hasRole('company_admin') && ! $companyId) {
+                            $companyId = $user->company_id;
+                        }
+
+                        if (! $companyId) {
+                            return true;
+                        }
+
+                        // Check if company has any departments
+                        $hasDepartments = Department::where('company_id', $companyId)->exists();
+
+                        return ! $hasDepartments;
                     }),
             ]);
     }

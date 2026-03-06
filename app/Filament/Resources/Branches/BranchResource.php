@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\Branches;
 
-use App\Filament\Resources\Branches\Pages\CreateBranch;
-use App\Filament\Resources\Branches\Pages\EditBranch;
 use App\Filament\Resources\Branches\Pages\ListBranches;
 use App\Filament\Resources\Branches\Schemas\BranchForm;
 use App\Filament\Resources\Branches\Tables\BranchesTable;
@@ -43,6 +41,7 @@ class BranchResource extends Resource
         if ($user && $user->company_id) {
             return $query->where('company_id', $user->company_id);
         }
+
         // Super admin sees all branches
         return $query;
     }
@@ -58,7 +57,6 @@ class BranchResource extends Resource
     {
         return [
             'index' => ListBranches::route('/'),
-            'edit' => EditBranch::route('/{record}/edit'),
         ];
     }
 }

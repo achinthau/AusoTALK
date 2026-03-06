@@ -17,7 +17,7 @@ class ExtensionTypeResource extends Resource
 {
     protected static ?string $model = ExtensionType::class;
 
-    protected static \BackedEnum|string|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static \BackedEnum|string|null $navigationIcon = Heroicon::OutlinedListBullet;
 
     protected static ?string $navigationLabel = 'Extension Types';
 
@@ -60,7 +60,7 @@ class ExtensionTypeResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasRole('super_admin') ||  auth()->user()?->hasRole('company_admin') ?? false;
+        return auth()->user()?->hasRole('super_admin') || auth()->user()?->hasRole('company_admin') ?? false;
     }
 
     public static function canCreate(): bool

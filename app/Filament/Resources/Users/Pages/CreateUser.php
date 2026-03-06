@@ -15,27 +15,8 @@ class CreateUser extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        \Log::info('=== CreateUser START ===');
-        \Log::info('Full form data received:', $data);
-        \Log::info('=== CreateUser END ===');
-        
         // Store role before it's removed from data
         $this->roleToAssign = $data['roles'] ?? null;
-        
-        \Log::info('CreateUser - Role captured:', ['role' => $this->roleToAssign]);
-        
-        // Handle auto-generate password
-        if (!empty($data['auto_generate_password'])) {
-            $data['password'] = \Str::random(12);
-        }
-        
-        // If password is still not set, generate one
-        if (empty($data['password'])) {
-            $data['password'] = \Str::random(12);
-        } else {
-            // Hash the password if it was provided by user
-            $data['password'] = bcrypt($data['password']);
-        }
 
         // If company_admin user, auto-assign their company
         if (auth()->user()?->hasRole('company_admin') && auth()->user()?->company_id) {
@@ -44,44 +25,21 @@ class CreateUser extends CreateRecord
 
         // Remove non-database fields
         unset($data['roles']);
-        unset($data['auto_generate_password']);
         unset($data['password_confirmation']); // Not a database field
-        
-        \Log::info('CreateUser - Data to save:', $data);
-        
+
         return $data;
     }
 
     protected function afterCreate(): void
     {
-        \Log::info('CreateUser - After create:', [
-            'user_id' => $this->record->id,
-            'role' => $this->roleToAssign,
-        ]);
-        
-        if (!empty($this->roleToAssign)) {
-            try {
-                $this->record->syncRoles([$this->roleToAssign]);
-                app()['cache']->forget('spatie.permission.cache');
-                
-                \Log::info('CreateUser - Role assigned:', [
-                    'user_id' => $this->record->id,
-                    'role' => $this->roleToAssign
-                ]);
-            } catch (\Exception $e) {
-                \Log::error('CreateUser - Failed to assign role:', [
-                    'user_id' => $this->record->id,
-                    'role' => $this->roleToAssign,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        } else {
-            \Log::warning('CreateUser - No role provided');
+        if (! empty($this->roleToAssign)) {
+            $this->record->syncRoles([$this->roleToAssign]);
+            app()['cache']->forget('spatie.permission.cache');
         }
     }
 
-   /*  protected function getRedirectUrl(): string
-    {
-        return $this->getResource()::getUrl('edit', ['record' => $this->record]);
-    } */
+    /*  protected function getRedirectUrl(): string
+     {
+         return $this->getResource()::getUrl('edit', ['record' => $this->record]);
+     } */
 }
