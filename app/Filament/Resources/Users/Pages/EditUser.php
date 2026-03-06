@@ -32,6 +32,8 @@ class EditUser extends EditRecord
         $data['gender'] = $this->record->gender;
         $data['address'] = $this->record->address;
         $data['company_id'] = $this->record->company_id;
+        $data['branch_id'] = $this->record->branch_id;
+        $data['department_id'] = $this->record->department_id;
 
         return $data;
     }

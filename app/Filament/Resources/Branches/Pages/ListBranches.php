@@ -14,8 +14,7 @@ class ListBranches extends ListRecords
     {
         return [
             CreateAction::make()
-                ->modal()
-                ->successRedirectUrl(fn ($record) => BranchResource::getUrl('edit', ['record' => $record])),
+                ->modal(),
         ];
     }
 }

@@ -24,6 +24,8 @@ class User extends Authenticatable
         'email',
         'password',
         'company_id',
+        'branch_id',
+        'department_id',
         'phone',
         'extension',
         'nic',
@@ -59,6 +61,16 @@ class User extends Authenticatable
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 
     public function extensionRecord(): BelongsTo

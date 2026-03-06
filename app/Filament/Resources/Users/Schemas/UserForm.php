@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Models\Branch;
 use App\Models\Company;
+use App\Models\Department;
 use App\Models\Extension;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -19,9 +21,13 @@ class UserForm
                     ->maxLength(255),
                 TextInput::make('email')
                     ->email()
+                    ->regex('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/')
                     ->required()
                     ->unique(ignoreRecord: true)
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->validationMessages([
+                        'regex' => 'Please enter a valid email address (e.g., user@example.com).',
+                    ]),
                 TextInput::make('phone')
                     ->label('Phone')
                     ->nullable()
@@ -143,6 +149,97 @@ class UserForm
                         }
 
                         return false;
+                    }),
+                Select::make('branch_id')
+                    ->label('Branch')
+                    ->options(function ($get) {
+                        $user = auth()->user();
+                        $companyId = $get('company_id');
+
+                        // For company_admin users, use their company
+                        if ($user?->hasRole('company_admin') && ! $companyId) {
+                            $companyId = $user->company_id;
+                        }
+
+                        if (! $companyId) {
+                            return [];
+                        }
+
+                        return Branch::where('company_id', $companyId)
+                            ->pluck('name', 'id')
+                            ->toArray();
+                    })
+                    ->searchable()
+                    ->nullable()
+                    ->live()
+                    ->hidden(function ($get) {
+                        $user = auth()->user();
+                        $companyId = $get('company_id');
+
+                        // For company_admin users, use their company
+                        if ($user?->hasRole('company_admin') && ! $companyId) {
+                            $companyId = $user->company_id;
+                        }
+
+                        if (! $companyId) {
+                            return true;
+                        }
+
+                        // Check if company has any branches
+                        $hasBranches = Branch::where('company_id', $companyId)->exists();
+
+                        return ! $hasBranches;
+                    }),
+                Select::make('department_id')
+                    ->label('Department')
+                    ->options(function ($get) {
+                        $user = auth()->user();
+                        $companyId = $get('company_id');
+                        $branchId = $get('branch_id');
+
+                        // For company_admin users, use their company
+                        if ($user?->hasRole('company_admin') && ! $companyId) {
+                            $companyId = $user->company_id;
+                        }
+
+                        if (! $companyId) {
+                            return [];
+                        }
+
+                        // If branch is selected, get departments for that branch
+                        if ($branchId) {
+                            return Department::where('company_id', $companyId)
+                                ->where('branch_id', $branchId)
+                                ->pluck('name', 'id')
+                                ->toArray();
+                        }
+
+                        // If no branch selected, get company-level departments (where branch_id is null)
+                        return Department::where('company_id', $companyId)
+                            ->whereNull('branch_id')
+                            ->pluck('name', 'id')
+                            ->toArray();
+                    })
+                    ->searchable()
+                    ->nullable()
+                    ->live()
+                    ->hidden(function ($get) {
+                        $user = auth()->user();
+                        $companyId = $get('company_id');
+
+                        // For company_admin users, use their company
+                        if ($user?->hasRole('company_admin') && ! $companyId) {
+                            $companyId = $user->company_id;
+                        }
+
+                        if (! $companyId) {
+                            return true;
+                        }
+
+                        // Check if company has any departments
+                        $hasDepartments = Department::where('company_id', $companyId)->exists();
+
+                        return ! $hasDepartments;
                     }),
             ]);
     }

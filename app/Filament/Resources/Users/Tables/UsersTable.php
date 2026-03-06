@@ -61,6 +61,14 @@ class UsersTable
                     ->label('Company')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('branch.name')
+                    ->label('Branch')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('department.name')
+                    ->label('Department')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('roles.name')
                     ->label('Role')
                     ->searchable()
