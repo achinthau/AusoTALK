@@ -78,7 +78,7 @@ class AgentsWidget extends Widget
         }
 
         return User::query()
-            ->whereHas('roles', fn ($query) => $query->where('name', 'agent'))
+            // ->whereHas('roles', fn ($query) => $query->where('name', 'agent'))
             ->when($companyId, fn ($query) => $query->where('company_id', $companyId))
             ->orderBy('name')
             ->get();
