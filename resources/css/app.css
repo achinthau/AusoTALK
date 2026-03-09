@@ -9,3 +9,35 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+@layer components {
+    /* Reduce table cell padding */
+    .fi-ta-cell {
+        @apply !p-0 !ps-1 !pe-1 sm:!ps-2 sm:!pe-2;
+    }
+    
+    .fi-ta-cell:first-of-type {
+        @apply !ps-1 sm:!ps-2;
+    }
+    
+    .fi-ta-cell:last-of-type {
+        @apply !pe-1 sm:!pe-2;
+    }
+    
+    .fi-ta-cell:has(.fi-ta-actions),
+    .fi-ta-cell:has(.fi-ta-record-checkbox) {
+        @apply !p-2;
+    }
+    
+    .fi-ta-header-cell {
+        @apply !px-2 !py-2;
+    }
+    
+    .fi-ta-header-cell:first-of-type {
+        @apply !ps-2;
+    }
+    
+    .fi-ta-header-cell:last-of-type {
+        @apply !pe-2;
+    }
+}

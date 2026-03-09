@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\ExtensionTypes\Tables;
 
-use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
@@ -24,10 +23,6 @@ class ExtensionTypesTable
             ])
             ->filters([
                 //
-            ])
-            ->headerActions([
-                CreateAction::make()
-                    ->visible(fn () => auth()->user()?->hasRole('super_admin') ?? false),
             ])
             ->recordActions([
                 EditAction::make()

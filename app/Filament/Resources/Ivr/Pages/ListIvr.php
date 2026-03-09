@@ -18,6 +18,7 @@ class ListIvr extends ListRecords
             Action::make('analytics')
                 ->label('View Analytics')
                 ->icon('heroicon-o-chart-bar')
+                ->color('primary')
                 ->url(AnalyticsIvr::getUrl()),
             // ->openUrlInNewTab(),
         ];
