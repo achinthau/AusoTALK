@@ -30,7 +30,9 @@ Route::match(['GET', 'POST'], '/pbx-call-answered', function (StoreAnsweredCall 
     Log::info($request->all());
 
     $tenant = $request['tenant'];
-    $agent = User::where('extension', $request['dnis'])->first();
+    $agent = User::where('primary_extension', $request['dnis'])
+        ->orWhere('secondary_extension', $request['dnis'])
+        ->first();
 
     if (! $agent) {
         Log::warning('pbx-call-answered: no user with extension '.$request['dnis']);
@@ -53,7 +55,9 @@ Route::match(['GET', 'POST'], '/pbx-call-disconnected', function (StoreAnsweredC
     Log::info($request->all());
 
     $tenant = $request['tenant'];
-    $agent = User::where('extension', $request['dnis'])->first();
+    $agent = User::where('primary_extension', $request['dnis'])
+        ->orWhere('secondary_extension', $request['dnis'])
+        ->first();
 
     if (! $agent) {
         Log::warning('pbx-call-disconnected: no user with extension '.$request['dnis']);
@@ -105,4 +109,5 @@ Route::get('/call-statistics', function () {
 
 // Authenticated routes for dashboard statistics (fallback when WebSocket is unavailable)
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/dashboard/statistics', [DashboardController::class, 'getStatistics']);});
+    Route::get('/dashboard/statistics', [DashboardController::class, 'getStatistics']);
+});
