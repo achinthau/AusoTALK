@@ -73,6 +73,12 @@ class UsersTable
                     ->label('Role')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('primary_extension')
+                    ->label('Primary Extension')
+                    ->sortable(),
+                TextColumn::make('secondary_extension')
+                    ->label('Secondary Extension')
+                    ->sortable(),
             ])
             ->filters([
                 //
