@@ -74,7 +74,168 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<style>.fi-simple-header-heading { display: none; }.fi-simple-layout .fi-logo { height: 4rem !important; }.fi-topbar .fi-logo { height: 2rem !important; }.fi-sidebar { background-color: #e5e7eb !important; } .dark .fi-sidebar { background-color: #111827 !important; }</style>',
+                fn (): string => '
+                <style>
+                    .fi-simple-header-heading { display: none; }
+                    .fi-simple-layout .fi-logo { height: 4rem !important; }
+                    .fi-topbar .fi-logo { height: 2rem !important; }
+                    .fi-sidebar { background-color: #e5e7eb !important; }
+                    .dark .fi-sidebar { background-color: #111827 !important; }
+                    .fi-topbar .fi-topbar-start button svg { display: none !important; }
+                    .fi-topbar .fi-topbar-start button::before {
+                        content: "";
+                        display: inline-block;
+                        width: 24px;
+                        height: 16px;
+                        background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%271f2937%27%3E%3Crect y=%275%27 width=%2724%27 height=%272%27/%3E%3Crect y=%2711%27 width=%2724%27 height=%272%27/%3E%3Crect y=%2717%27 width=%2724%27 height=%272%27/%3E%3C/svg%3E");
+                        background-size: contain;
+                        background-repeat: no-repeat;
+                        margin-right: 4px;
+                    }
+                    .dark .fi-topbar .fi-topbar-start button::before {
+                        background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27f3f4f6%27%3E%3Crect y=%275%27 width=%2724%27 height=%272%27/%3E%3Crect y=%2711%27 width=%2724%27 height=%272%27/%3E%3Crect y=%2717%27 width=%2724%27 height=%272%27/%3E%3C/svg%3E");
+                    }
+                    .fi-header .fi-breadcrumbs {
+                        display: none !important;
+                    }
+                    .fi-header .fi-header-heading,
+                    .fi-header-heading {
+                        font-size: 1.25rem !important;
+                        line-height: 1.75rem !important;
+                    }
+                    @media (min-width: 40rem) {
+                        .fi-header .fi-header-heading,
+                        .fi-header-heading {
+                            font-size: 1.5rem !important;
+                            line-height: 2rem !important;
+                        }
+                    }
+                    /* Remove button background - use border and text color only (page buttons only, not sidebar) */
+                    .fi-main .fi-btn,
+                    .fi-page .fi-btn,
+                    .fi-content .fi-btn {
+                        background-color: transparent !important;
+                        border: 1.5px solid !important;
+                    }
+                    
+                    /* Color variants - border inherits from text color (page buttons only) */
+                    .fi-main .fi-btn.fi-color-primary,
+                    .fi-page .fi-btn.fi-color-primary,
+                    .fi-content .fi-btn.fi-color-primary {
+                        border-color: #3b82f6 !important;
+                        color: #3b82f6 !important;
+                    }
+                    
+                    .fi-main .fi-btn.fi-color-primary .fi-icon,
+                    .fi-page .fi-btn.fi-color-primary .fi-icon,
+                    .fi-content .fi-btn.fi-color-primary .fi-icon {
+                        color: #3b82f6 !important;
+                    }
+                    
+                    .fi-main .fi-btn.fi-color-danger,
+                    .fi-page .fi-btn.fi-color-danger,
+                    .fi-content .fi-btn.fi-color-danger {
+                        border-color: #ef4444 !important;
+                        color: #ef4444 !important;
+                    }
+                    
+                    .fi-main .fi-btn.fi-color-danger .fi-icon,
+                    .fi-page .fi-btn.fi-color-danger .fi-icon,
+                    .fi-content .fi-btn.fi-color-danger .fi-icon {
+                        color: #ef4444 !important;
+                    }
+                    
+                    .fi-main .fi-btn.fi-color-success,
+                    .fi-page .fi-btn.fi-color-success,
+                    .fi-content .fi-btn.fi-color-success {
+                        border-color: #10b981 !important;
+                        color: #10b981 !important;
+                    }
+                    
+                    .fi-main .fi-btn.fi-color-success .fi-icon,
+                    .fi-page .fi-btn.fi-color-success .fi-icon,
+                    .fi-content .fi-btn.fi-color-success .fi-icon {
+                        color: #10b981 !important;
+                    }
+                    
+                    .fi-main .fi-btn.fi-color-warning,
+                    .fi-page .fi-btn.fi-color-warning,
+                    .fi-content .fi-btn.fi-color-warning {
+                        border-color: #f59e0b !important;
+                        color: #f59e0b !important;
+                    }
+                    
+                    .fi-main .fi-btn.fi-color-warning .fi-icon,
+                    .fi-page .fi-btn.fi-color-warning .fi-icon,
+                    .fi-content .fi-btn.fi-color-warning .fi-icon {
+                        color: #f59e0b !important;
+                    }
+                    
+                    .fi-main .fi-btn.fi-color-info,
+                    .fi-page .fi-btn.fi-color-info,
+                    .fi-content .fi-btn.fi-color-info {
+                        border-color: #0ea5e9 !important;
+                        color: #0ea5e9 !important;
+                    }
+                    
+                    .fi-main .fi-btn.fi-color-info .fi-icon,
+                    .fi-page .fi-btn.fi-color-info .fi-icon,
+                    .fi-content .fi-btn.fi-color-info .fi-icon {
+                        color: #0ea5e9 !important;
+                    }
+                    
+                    .fi-main .fi-btn.fi-color-gray,
+                    .fi-page .fi-btn.fi-color-gray,
+                    .fi-content .fi-btn.fi-color-gray {
+                        border-color: #6b7280 !important;
+                        color: #6b7280 !important;
+                    }
+                    
+                    .fi-main .fi-btn.fi-color-gray .fi-icon,
+                    .fi-page .fi-btn.fi-color-gray .fi-icon,
+                    .fi-content .fi-btn.fi-color-gray .fi-icon {
+                        color: #6b7280 !important;
+                    }
+                    
+                    /* Icon buttons (page buttons only) */
+                    .fi-main .fi-icon-btn,
+                    .fi-page .fi-icon-btn,
+                    .fi-content .fi-icon-btn {
+                        background-color: transparent !important;
+                        border: 1.5px solid !important;
+                        border-color: #9ca3af !important;
+                        color: #6b7280 !important;
+                    }
+                    
+                    .fi-main .fi-icon-btn.fi-color-primary,
+                    .fi-page .fi-icon-btn.fi-color-primary,
+                    .fi-content .fi-icon-btn.fi-color-primary {
+                        border-color: #3b82f6 !important;
+                        color: #3b82f6 !important;
+                    }
+                    
+                    .fi-main .fi-icon-btn.fi-color-primary .fi-icon,
+                    .fi-page .fi-icon-btn.fi-color-primary .fi-icon,
+                    .fi-content .fi-icon-btn.fi-color-primary .fi-icon {
+                        color: #3b82f6 !important;
+                    }
+                    
+                    .fi-main .fi-icon-btn.fi-color-danger,
+                    .fi-page .fi-icon-btn.fi-color-danger,
+                    .fi-content .fi-icon-btn.fi-color-danger {
+                        border-color: #ef4444 !important;
+                        color: #ef4444 !important;
+                    }
+                    
+                    .fi-main .fi-icon-btn.fi-color-danger .fi-icon,
+                    .fi-page .fi-icon-btn.fi-color-danger .fi-icon,
+                    .fi-content .fi-icon-btn.fi-color-danger .fi-icon {
+                        color: #ef4444 !important;
+                    }
+                        color: #ef4444 !important;
+                    }
+                </style>
+                ',
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,

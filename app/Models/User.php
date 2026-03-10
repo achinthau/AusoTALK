@@ -32,6 +32,8 @@ class User extends Authenticatable
         'gender',
         'address',
         'is_logged_in',
+        'primary_extension',
+        'secondary_extension',
     ];
 
     /**

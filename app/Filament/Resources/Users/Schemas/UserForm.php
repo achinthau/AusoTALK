@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Users\Schemas;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Department;
-use App\Models\Extension;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -42,22 +41,6 @@ class UserForm
                         'regex' => 'Phone number must be exactly 10 numeric digits.',
                         'unique' => 'This phone number is already in use.',
                     ]),
-                Select::make('extension')
-                    ->label('Extension')
-                    ->options(function ($get) {
-                        $companyId = $get('company_id');
-                        if (! $companyId) {
-                            return [];
-                        }
-
-                        return Extension::where('company_id', $companyId)
-                            ->where('status', 0)
-                            ->pluck('number', 'number')
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->nullable()
-                    ->live(),
                 TextInput::make('nic')
                     ->label('NIC')
                     ->nullable()
