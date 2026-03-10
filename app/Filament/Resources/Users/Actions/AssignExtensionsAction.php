@@ -27,11 +27,19 @@ class AssignExtensionsAction extends Action
                 Select::make('user_id')
                     ->label('Select User')
                     ->options(function () {
-                        return User::query()
+                        $query = User::query()
                             ->where(function ($query) {
                                 $query->whereNull('primary_extension')
                                     ->orWhereNull('secondary_extension');
-                            })
+                            });
+
+                        // If company admin, filter by their company
+                        $user = auth()->user();
+                        if ($user?->company_id && ! $user->hasRole('super_admin')) {
+                            $query->where('company_id', $user->company_id);
+                        }
+
+                        return $query
                             ->get()
                             ->mapWithKeys(function ($user) {
                                 $extensions = [];
@@ -77,31 +85,17 @@ class AssignExtensionsAction extends Action
                             return [];
                         }
 
-                        // Get all SIP/PJSIP extensions for the company
-                        $allExtensions = Extension::where('company_id', $company_id)
+                        // Get all SIP/PJSIP extensions with status == 0 (unassigned)
+                        return Extension::where('company_id', $company_id)
+                            ->where('status', 0)
                             ->whereHas('extensionType', function ($query) {
                                 $query->whereIn('name', ['sip', 'pjsip', 'SIP', 'PJSIP']);
                             })
                             ->get()
-                            ->mapWithKeys(fn ($ext) => [$ext->number => $ext->number]);
-
-                        // Get assigned extensions (from both primary and secondary columns)
-                        $assignedExtensions = User::query()
-                            ->where('id', '!=', $get('user_id'))
-                            ->pluck('primary_extension')
-                            ->merge(
-                                User::query()
-                                    ->where('id', '!=', $get('user_id'))
-                                    ->pluck('secondary_extension')
-                            )
-                            ->filter()
-                            ->unique()
-                            ->values();
-
-                        // Remove assigned extensions
-                        return $allExtensions->filter(function ($value, $key) use ($assignedExtensions) {
-                            return ! $assignedExtensions->contains($key);
-                        })->toArray();
+                            ->mapWithKeys(fn ($ext) => [
+                                $ext->number => $ext->number,
+                            ])
+                            ->toArray();
                     })
                     ->disabled(fn ($get) => ! $get('user_id'))
                     ->searchable()
@@ -120,31 +114,17 @@ class AssignExtensionsAction extends Action
                             return [];
                         }
 
-                        // Get all IAX/IAX2 extensions for the company
-                        $allExtensions = Extension::where('company_id', $company_id)
+                        // Get all IAX/IAX2 extensions with status == 0 (unassigned)
+                        return Extension::where('company_id', $company_id)
+                            ->where('status', 0)
                             ->whereHas('extensionType', function ($query) {
                                 $query->whereIn('name', ['iax', 'iax2', 'IAX', 'IAX2']);
                             })
                             ->get()
-                            ->mapWithKeys(fn ($ext) => [$ext->number => $ext->number]);
-
-                        // Get assigned extensions (from both primary and secondary columns)
-                        $assignedExtensions = User::query()
-                            ->where('id', '!=', $get('user_id'))
-                            ->pluck('primary_extension')
-                            ->merge(
-                                User::query()
-                                    ->where('id', '!=', $get('user_id'))
-                                    ->pluck('secondary_extension')
-                            )
-                            ->filter()
-                            ->unique()
-                            ->values();
-
-                        // Remove assigned extensions and primary extension if already selected
-                        return $allExtensions->filter(function ($value, $key) use ($assignedExtensions, $get) {
-                            return ! $assignedExtensions->contains($key) && $key != $get('primary_extension');
-                        })->toArray();
+                            ->mapWithKeys(fn ($ext) => [
+                                $ext->number => $ext->number,
+                            ])
+                            ->toArray();
                     })
                     ->disabled(fn ($get) => ! $get('user_id'))
                     ->searchable()
@@ -157,6 +137,19 @@ class AssignExtensionsAction extends Action
                     'primary_extension' => $data['primary_extension'] ?? null,
                     'secondary_extension' => $data['secondary_extension'] ?? null,
                 ]);
+
+                // Update extension status to 1 (assigned)
+                if ($data['primary_extension']) {
+                    Extension::where('number', $data['primary_extension'])
+                        ->where('company_id', $user->company_id)
+                        ->update(['status' => 1]);
+                }
+
+                if ($data['secondary_extension']) {
+                    Extension::where('number', $data['secondary_extension'])
+                        ->where('company_id', $user->company_id)
+                        ->update(['status' => 1]);
+                }
 
                 Notification::make()
                     ->success()

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Extensions\Actions;
 
 use App\Services\AusoApiManager;
 use Filament\Actions\CreateAction;
+use Filament\Notifications\Notification;
 
 class CreateExtensionAction extends CreateAction
 {
@@ -17,9 +18,36 @@ class CreateExtensionAction extends CreateAction
         parent::setUp();
 
         $this->modalHeading('Create Extension')
+            ->before(function (array $data) {
+                // If company user (logged in user has company_id), force their company_id
+                if (auth()->user()?->company_id && ! isset($data['company_id'])) {
+                    $data['company_id'] = auth()->user()->company_id;
+                }
+
+                // Get company_id for validation
+                $companyId = $data['company_id'] ?? auth()->user()?->company_id;
+
+                // Validate the unique combination of company_id, number, and extension_type_id
+                if (isset($data['number'], $data['extension_type_id']) && $companyId) {
+                    $exists = \App\Models\Extension::where('number', $data['number'])
+                        ->where('company_id', $companyId)
+                        ->where('extension_type_id', $data['extension_type_id'])
+                        ->exists();
+
+                    if ($exists) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Duplicate Extension')
+                            ->body('This extension number and type combination already exists for this company.')
+                            ->send();
+
+                        $this->halt();
+                    }
+                }
+            })
             ->mutateFormDataUsing(function (array $data) {
                 // If company user (logged in user has company_id), force their company_id
-                if (auth()->user()?->company_id) {
+                if (auth()->user()?->company_id && ! isset($data['company_id'])) {
                     $data['company_id'] = auth()->user()->company_id;
                 }
 

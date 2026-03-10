@@ -1,4 +1,21 @@
 <x-filament-widgets::widget class="w-full">
+    <!-- Header with Toggle Button -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+        {{-- <h3 style="font-size: 1.125rem; font-weight: 600; color: #111827; margin: 0;">Agents</h3> --}}
+        <h3> </h3>
+        <button 
+            wire:click="toggleExpand"
+            style="background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; transition: all 0.2s;"
+            onmouseover="this.style.backgroundColor='#e5e7eb'; this.style.borderColor='#9ca3af';"
+            onmouseout="this.style.backgroundColor='#f3f4f6'; this.style.borderColor='#d1d5db';"
+        >
+            <svg style="width: 1.25rem; height: 1.25rem; transform: {{ $this->isExpanded ? 'rotate(0deg)' : 'rotate(180deg)' }}; transition: transform 0.2s;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+            </svg>
+        </button>
+    </div>
+
+    @if($this->isExpanded)
     <!-- Filters Section -->
     <div style="margin-bottom: 0.5rem;">
         <!-- Super Admin: Company and Branch Filters -->
@@ -86,7 +103,7 @@
                         $isOnCall = $this->agentOnCallStatus[$agent->id] ?? false;
                     @endphp
                     <div 
-                        style="width: calc(16.666% - 0.625rem); display: flex; align-items: flex-start; gap: 1.5rem; border: 3px solid {{ $isOnCall ? '#16a34a' : '#c1c1c1' }}; border-radius: 1.8rem;" 
+                        style="width: calc(16.666% - 0.625rem); display: flex; align-items: flex-start; gap: 0.5rem; border: 3px solid {{ $isOnCall ? '#16a34a' : '#c1c1c1' }}; border-radius: 1.8rem;" 
                         class="shadow p-4 transition-all duration-200 {{ $agent->is_logged_in ? 'bg-green-50' : 'bg-gray-50' }} agent-item" 
                         data-agent-id="{{ $agent->id }}"
                     >
@@ -97,16 +114,21 @@
                             <span style="margin-top: 0.25rem;" class="flex h-2.5 w-2.5 rounded-full agent-status-dot {{ $agent->is_logged_in ? 'bg-green-500' : 'bg-green-400' }}"></span>
                         </div>
 
-                        <!-- Right: Name and Extension -->
+                        <!-- Right: Name and Extensions -->
                         <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem;">
                             <!-- Name -->
                             <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; flex: 1; margin: 0;" class="font-semibold text-sm text-gray-900">{{ $agent->name }}</h3>
                             
-                            <!-- Extension -->
-                            @if($agent->extension)
-                                <p class="text-xs text-gray-600">Ext: {{ $agent->extension }}</p>
-                            @else
-                                <p class="text-xs text-gray-400 text-center">-----</p>
+                            <!-- Extensions -->
+                            @if($agent->primary_extension || $agent->secondary_extension)
+                                <p class="text-xs text-gray-600">
+                                    @if($agent->primary_extension)
+                                        <span>[P:{{ $agent->primary_extension }}]</span>
+                                    @endif
+                                    @if($agent->secondary_extension)
+                                        <span>{{ $agent->primary_extension ? ' ' : '' }}[S:{{ $agent->secondary_extension }}]</span>
+                                    @endif
+                                </p>
                             @endif
                         </div>
                     </div>
@@ -124,4 +146,5 @@
     </div>
 
     <!-- No additional script needed - polling is handled by app.js agent-polling module -->
+    @endif
 </x-filament-widgets::widget>

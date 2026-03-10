@@ -2,8 +2,12 @@
 
 namespace App\Filament\Resources\Extensions\Tables;
 
-use Filament\Actions\DeleteBulkAction;
+use App\Models\Company;
+use App\Models\ExtensionType;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -34,10 +38,42 @@ class ExtensionsTable
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->modal()
+                    ->form([
+                        Select::make('company_id')
+                            ->label('Company')
+                            ->options(Company::pluck('name', 'id'))
+                            ->required()
+                            ->disabled(true)
+                            ->columnSpan('full'),
+                        TextInput::make('number')
+                            ->label('Extension Number')
+                            ->required()
+                            ->disabled(true)
+                            ->columnSpan(1),
+                        Select::make('extension_type_id')
+                            ->label('Extension Type')
+                            ->options(ExtensionType::pluck('name', 'id'))
+                            ->required()
+                            ->disabled(true)
+                            ->columnSpan(1),
+                        TextInput::make('password')
+                            ->label('Password')
+                            ->password()
+                            ->revealable()
+                            ->nullable()
+                            ->helperText('Update to change password')
+                            ->dehydrated()
+                            ->columnSpan('full'),
+                        Hidden::make('context'),
+                        Hidden::make('status'),
+                        Hidden::make('exten_type'),
+                        Hidden::make('updatedby'),
+                    ]),
             ])
             ->bulkActions([
-                DeleteBulkAction::make(),
+                //
             ]);
     }
 }

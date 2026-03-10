@@ -24,10 +24,7 @@ class UsersTable
                     ->label('Phone')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('extension')
-                    ->label('Extension')
-                    ->searchable()
-                    ->sortable(),
+                
                 TextColumn::make('nic')
                     ->label('NIC')
                     ->searchable()

@@ -18,7 +18,9 @@ return new class extends Migration
             $table->foreignId('extension_type_id')->constrained()->cascadeOnDelete();
             $table->string('context')->nullable();
             $table->timestamps();
-            $table->unique(['company_id', 'number']);
+            // Unique constraint on the combination of company_id, number, and extension_type_id
+            // This allows duplicate extension numbers as long as they have different types
+            $table->unique(['company_id', 'number', 'extension_type_id']);
         });
     }
 
