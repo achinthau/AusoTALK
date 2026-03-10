@@ -134,4 +134,50 @@ class ExtensionForm
         // Fallback to all extension types if none are allocated
         return ExtensionType::pluck('name', 'id')->toArray();
     }
+
+    public static function configureEdit(Schema $schema): Schema
+    {
+        $userCompanyId = auth()->user()?->company_id;
+
+        return $schema
+            ->components([
+                Select::make('company_id')
+                    ->label('Company')
+                    ->options(Company::pluck('name', 'id'))
+                    ->required()
+                    ->disabled(true),
+                TextInput::make('number')
+                    ->label('Extension Number')
+                    ->placeholder('e.g., 1001')
+                    ->required()
+                    ->maxLength(4)
+                    ->disabled(true)
+                    ->regex('/^\d{3,4}$/')
+                    ->validationMessages([
+                        'regex' => 'Extension number must be 3-4 digits.',
+                    ]),
+                Select::make('extension_type_id')
+                    ->label('Extension Type')
+                    ->options(fn ($get) => self::getExtensionTypeOptions($get, $userCompanyId))
+                    ->required()
+                    ->preload()
+                    ->searchable()
+                    ->disabled(true),
+                TextInput::make('password')
+                    ->label('Password')
+                    ->password()
+                    ->revealable()
+                    ->nullable()
+                    ->helperText('Update to change password')
+                    ->dehydrated(),
+                Hidden::make('context')
+                    ->default(fn ($get) => self::getContextForCompany($get)),
+                Hidden::make('status')
+                    ->default('0'),
+                Hidden::make('exten_type')
+                    ->default(fn ($get) => self::getExtensionTypeName($get)),
+                Hidden::make('updatedby')
+                    ->default(fn () => auth()->user()?->name ?? 'ADMIN'),
+            ]);
+    }
 }

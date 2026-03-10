@@ -26,7 +26,8 @@ class ExtensionTypesTable
             ])
             ->recordActions([
                 EditAction::make()
-                    ->visible(fn () => auth()->user()?->hasRole('super_admin') ?? false),
+                    ->visible(fn () => auth()->user()?->hasRole('super_admin') ?? false)
+                    ->modal(),
             ])
             ->bulkActions([
                 DeleteBulkAction::make()
