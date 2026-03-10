@@ -18,5 +18,4 @@ return new class extends Migration {
     {
         // This migration is a no-op, nothing to revert.
     }
-    }
 };
