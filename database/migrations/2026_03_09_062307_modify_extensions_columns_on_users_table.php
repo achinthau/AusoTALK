@@ -12,11 +12,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            // Drop foreign key constraints using raw SQL
-            DB::statement('ALTER TABLE users DROP FOREIGN KEY users_primary_extension_id_foreign');
-            DB::statement('ALTER TABLE users DROP FOREIGN KEY users_secondary_extension_id_foreign');
-        });
 
         // Now drop the columns and add new ones
         Schema::table('users', function (Blueprint $table) {
