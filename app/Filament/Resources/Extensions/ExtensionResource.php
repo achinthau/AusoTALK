@@ -24,9 +24,9 @@ class ExtensionResource extends Resource
     }
     protected static ?string $navigationLabel = 'Extensions';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'PBX';
+    protected static string|\UnitEnum|null $navigationGroup = 'Settings';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 6;
 
     public static function form(Schema $schema): Schema
     {
