@@ -11,6 +11,8 @@ class CallStatisticsWidget extends Widget
 
     protected int|string|array $columnSpan = 'full';
 
+    public bool $isExpanded = true;
+
     public int $inboundCalls = 0;
 
     public int $outboundCalls = 0;
@@ -47,5 +49,10 @@ class CallStatisticsWidget extends Widget
         $this->abandonedCalls = $queueStats['abandoned'];
 
         $this->ongoingCalls = $service->getOngoingCallCount();
+    }
+
+    public function toggleExpand(): void
+    {
+        $this->isExpanded = ! $this->isExpanded;
     }
 }

@@ -27,6 +27,8 @@ class AgentsWidget extends Widget
      */
     public array $agentOnCallStatus = [];
 
+    public bool $isExpanded = true;
+
     public function mount(): void
     {
         // Set default to user's company
@@ -129,7 +131,7 @@ class AgentsWidget extends Widget
                 ->get();
         }
 
-        return collect();
+        return User::query()->limit(0)->get();
     }
 
     public function getExtensionsByDepartment(): array
@@ -212,5 +214,10 @@ class AgentsWidget extends Widget
     public function updateAgentStatus(int $userId, bool $isOnCall): void
     {
         $this->agentOnCallStatus[$userId] = $isOnCall;
+    }
+
+    public function toggleExpand(): void
+    {
+        $this->isExpanded = ! $this->isExpanded;
     }
 }

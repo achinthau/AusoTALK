@@ -11,10 +11,17 @@ class DialerQueueWiseStatisticsWidget extends Widget
 
     protected int|string|array $columnSpan = 'full';
 
+    public bool $isExpanded = true;
+
     public function getDialerQueueData(): array
     {
         $statisticsService = app(DashboardStatisticsService::class);
 
         return $statisticsService->getDialerQueueWiseStatistics();
+    }
+
+    public function toggleExpand(): void
+    {
+        $this->isExpanded = ! $this->isExpanded;
     }
 }

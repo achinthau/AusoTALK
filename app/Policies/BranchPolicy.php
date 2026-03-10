@@ -9,7 +9,7 @@ class BranchPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('super_admin') || $user->hasRole('user');
+        return $user->hasRole('super_admin') || $user->hasRole('company_admin') || $user->hasRole('user');
     }
 
     public function view(User $user, Branch $branch): bool
@@ -17,17 +17,17 @@ class BranchPolicy
         if ($user->hasRole('super_admin')) {
             return true;
         }
-        
-        if ($user->hasRole('user')) {
+
+        if ($user->hasRole('company_admin') || $user->hasRole('user')) {
             return $user->company_id === $branch->company_id;
         }
-        
+
         return false;
     }
 
     public function create(User $user): bool
     {
-        return $user->hasRole('super_admin') || $user->hasRole('user');
+        return $user->hasRole('super_admin') || $user->hasRole('company_admin') || $user->hasRole('user');
     }
 
     public function update(User $user, Branch $branch): bool
@@ -35,11 +35,11 @@ class BranchPolicy
         if ($user->hasRole('super_admin')) {
             return true;
         }
-        
-        if ($user->hasRole('user')) {
+
+        if ($user->hasRole('company_admin') || $user->hasRole('user')) {
             return $user->company_id === $branch->company_id;
         }
-        
+
         return false;
     }
 
@@ -48,11 +48,11 @@ class BranchPolicy
         if ($user->hasRole('super_admin')) {
             return true;
         }
-        
-        if ($user->hasRole('user')) {
+
+        if ($user->hasRole('company_admin') || $user->hasRole('user')) {
             return $user->company_id === $branch->company_id;
         }
-        
+
         return false;
     }
 
