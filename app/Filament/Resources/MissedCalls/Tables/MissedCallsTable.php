@@ -2,24 +2,36 @@
 
 namespace App\Filament\Resources\MissedCalls\Tables;
 
+use AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade;
 use App\Filament\Exports\AbandonedCallExporter;
-use App\Models\AbandonedNew;
+use App\Models\PbxCallaction;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\Exports\Enums\ExportFormat;
+use Filament\Actions\Exports\ExportColumn;
+use Filament\Actions\Exports\Jobs\CreateXlsxFile;
+use Filament\Actions\Exports\Jobs\ExportCompletion;
+use Filament\Actions\Exports\Jobs\PrepareCsvExport;
+use Filament\Actions\Exports\Models\Export;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Bus;
 
 class MissedCallsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
-            ->query(AbandonedNew::query())
+            ->query(
+                PbxCallaction::query()
+                    ->whereIn('status', ['CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CANCEL'])
+                    ->whereRaw('CHAR_LENGTH(ani) > 6')
+            )
             ->selectable()
             ->selectCurrentPageOnly(false)
             ->columns([
@@ -38,85 +50,62 @@ class MissedCallsTable
                     ->sortable()
                     ->searchable(),
 
-                // TextColumn::make('queuename')
-                //     ->label('Skill')
-                //     ->sortable()
-                //     ->searchable(),
-
-                TextColumn::make('recalled_status')
-                    ->label('Recalled Status')
+                TextColumn::make('status')
+                    ->label('Status')
                     ->sortable()
-                    ->alignment('center')
-                    ->formatStateUsing(function ($state): string {
-                        if ($state == 1) {
-                            return '<span style="background-color: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; min-width: 30px; text-align: center;">✓</span>';
-                        }
-
-                        return '<span style="background-color: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; min-width: 30px; text-align: center;">✗</span>';
+                    ->searchable()
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'NOANSWER' => 'warning',
+                        'BUSY' => 'danger',
+                        'CANCEL' => 'gray',
+                        'CHANUNAVAIL' => 'danger',
+                        default => 'gray',
                     })
-                    ->html(),
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'CHANUNAVAIL' => 'Unavailable',
+                        'NOANSWER' => 'No Answer',
+                        'BUSY' => 'Busy',
+                        'CANCEL' => 'Cancel',
+                        default => $state,
+                    }),
 
-                TextColumn::make('received_time')
-                    ->label('Received')
-                    ->sortable(),
-
-                TextColumn::make('recalled_time')
-                    ->label('Recalled')
+                TextColumn::make('date')
+                    ->label('Date')
                     ->sortable(),
             ])
             ->filters([
-                Filter::make('received_time')
+                Filter::make('date')
                     ->form([
-                        DateTimePicker::make('received_from')
+                        DateTimePicker::make('date_from')
                             ->label('From')
                             ->withoutSeconds(),
-                        DateTimePicker::make('received_to')
+                        DateTimePicker::make('date_to')
                             ->label('To')
                             ->withoutSeconds(),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
                             ->when(
-                                $data['received_from'] ?? null,
-                                fn (Builder $q) => $q->where('received_time', '>=', $data['received_from'])
+                                $data['date_from'] ?? null,
+                                fn (Builder $q) => $q->where('date', '>=', $data['date_from'])
                             )
                             ->when(
-                                $data['received_to'] ?? null,
-                                fn (Builder $q) => $q->where('received_time', '<=', $data['received_to'])
+                                $data['date_to'] ?? null,
+                                fn (Builder $q) => $q->where('date', '<=', $data['date_to'])
                             );
                     }),
 
-                SelectFilter::make('recalled_status')
-                    ->label('Recalled Status')
+                SelectFilter::make('status')
+                    ->label('Status')
                     ->options([
-                        1 => 'Recalled',
-                        0 => 'Not Recalled',
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query->when(
-                            $data['value'] !== null && $data['value'] !== '',
-                            fn (Builder $q) => $q->where('recalled_status', (int) $data['value'])
-                        );
-                    }),
-
-                // SelectFilter::make('queuename')
-                //     ->label('Skill')
-                //     ->options(
-                //         AbandonedNew::query()
-                //             ->distinct('queuename')
-                //             ->whereNotNull('queuename')
-                //             ->pluck('queuename', 'queuename')
-                //             ->filter(fn ($value) => ! empty($value))
-                //             ->toArray()
-                //     )
-                //     ->query(function (Builder $query, array $data): Builder {
-                //         return $query->when(
-                //             $data['value'] ?? null,
-                //             fn (Builder $q) => $q->where('queuename', $data['value'])
-                //         );
-                //     }),
+                        'CHANUNAVAIL' => 'Unavailable',
+                        'NOANSWER' => 'No Answer',
+                        'BUSY' => 'Busy',
+                        'CANCEL' => 'Cancel',
+                    ]),
             ])
-            ->defaultSort('received_time', 'desc')
+            ->defaultSort('date', 'desc')
             ->paginated([10, 25, 50, 100])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -128,13 +117,13 @@ class MissedCallsTable
 
                             // Get column map
                             $columnMap = collect(AbandonedCallExporter::getColumns())
-                                ->mapWithKeys(fn (\Filament\Actions\Exports\ExportColumn $column) => [
+                                ->mapWithKeys(fn (ExportColumn $column) => [
                                     $column->getName() => $column->getLabel(),
                                 ])
                                 ->all();
 
                             // Create export record
-                            $export = \Filament\Actions\Exports\Models\Export::make([
+                            $export = Export::make([
                                 'user_id' => auth()->id(),
                                 'exporter' => AbandonedCallExporter::class,
                                 'total_rows' => $records->count(),
@@ -147,27 +136,27 @@ class MissedCallsTable
 
                             // Dispatch export job
                             $columnMap = collect(AbandonedCallExporter::getColumns())
-                                ->mapWithKeys(fn (\Filament\Actions\Exports\ExportColumn $column) => [
+                                ->mapWithKeys(fn (ExportColumn $column) => [
                                     $column->getName() => $column->getLabel(),
                                 ])
                                 ->all();
 
                             // Get the query for selected records only
                             $query = $records->toQuery();
-                            $serializedQuery = \AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade::serialize($query);
+                            $serializedQuery = EloquentSerializeFacade::serialize($query);
 
                             $formats = [ExportFormat::Csv, ExportFormat::Xlsx];
                             $hasXlsx = in_array(ExportFormat::Xlsx, $formats);
                             $hasCsv = in_array(ExportFormat::Csv, $formats);
 
-                            $makeCreateXlsxFileJob = fn () => new \Filament\Actions\Exports\Jobs\CreateXlsxFile(
+                            $makeCreateXlsxFileJob = fn () => new CreateXlsxFile(
                                 export: $export,
                                 columnMap: $columnMap,
                             );
 
                             $jobs = [
-                                \Illuminate\Support\Facades\Bus::batch([
-                                    app(\Filament\Actions\Exports\Jobs\PrepareCsvExport::class, [
+                                Bus::batch([
+                                    app(PrepareCsvExport::class, [
                                         'export' => $export,
                                         'query' => $serializedQuery,
                                         'columnMap' => $columnMap,
@@ -183,7 +172,7 @@ class MissedCallsTable
                             }
 
                             // Add ExportCompletion
-                            $jobs[] = app(\Filament\Actions\Exports\Jobs\ExportCompletion::class, [
+                            $jobs[] = app(ExportCompletion::class, [
                                 'authGuard' => 'web',
                                 'export' => $export,
                                 'columnMap' => $columnMap,
@@ -196,9 +185,9 @@ class MissedCallsTable
                                 $jobs[] = $makeCreateXlsxFileJob();
                             }
 
-                            \Illuminate\Support\Facades\Bus::chain($jobs)->dispatch();
+                            Bus::chain($jobs)->dispatch();
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Export Started')
                                 ->body('Exporting '.$records->count().' selected record(s)...')
                                 ->success()
