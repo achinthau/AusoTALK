@@ -17,6 +17,44 @@
                 font-size: 1.125rem !important;
                 min-width: 100% !important;
                 border-radius: 0.5rem !important;
+                background-color: #4f46e5 !important;
+                color: white !important;
+                border: none !important;
+                font-weight: 600 !important;
+                display: block !important;
+                width: 100% !important;
+                text-align: center !important;
+                cursor: pointer !important;
+            }
+            
+            .fi-btn:hover {
+                background-color: #4333cf !important;
+            }
+            
+            .fi-btn span {
+                color: white !important;
+            }
+            
+            .fi-input {
+                display: block !important;
+                width: 100% !important;
+            }
+            
+            .fi-form-section label {
+                display: block !important;
+                color: #374151 !important;
+                font-weight: 500 !important;
+                margin-bottom: 0.5rem !important;
+            }
+            
+            input[type="text"],
+            input[type="email"],
+            input[type="password"] {
+                width: 100% !important;
+                padding: 0.5rem 0.75rem !important;
+                border: 1px solid #d1d5db !important;
+                border-radius: 0.375rem !important;
+                font-size: 1rem !important;
             }
         </style>
     </head>
