@@ -11,6 +11,14 @@
         <meta name="csrf-token" content="{{ csrf_token() }}" />
         <title>{{ config('app.name') }} - Login</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <style>
+            .fi-btn {
+                padding: 0.875rem 1.5rem !important;
+                font-size: 1.125rem !important;
+                min-width: 100% !important;
+                border-radius: 0.5rem !important;
+            }
+        </style>
     </head>
     <body class="antialiased m-0 p-0">
         <div class="fixed inset-0 m-0 p-0 flex">
@@ -45,9 +53,11 @@
                     <div class="bg-white rounded-lg shadow-lg p-8 space-y-6">
                         {{ $this->form }}
                         
-                        <div class="flex gap-3">
+                        <div class="flex flex-col gap-3 w-full">
                             @foreach($this->getFormActions() as $action)
-                                {{ $action }}
+                                <div class="w-full">
+                                    {{ $action }}
+                                </div>
                             @endforeach
                         </div>
                     </div>
