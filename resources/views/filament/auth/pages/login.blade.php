@@ -12,94 +12,24 @@
         <title>{{ config('app.name') }} - Login</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <style>
-            /* Reset Filament button styles */
-            button,
-            .fi-btn,
-            [role="button"] {
+            /* Target Filament authenticate button */
+            [type="submit"],
+            button {
+                padding: 0.75rem 1.5rem;
                 background-color: #4f46e5 !important;
-                color: white !important;
-                padding: 1rem 1.5rem !important;
-                font-size: 1.25rem !important;
-                border-radius: 0.5rem !important;
-                border: none !important;
-                font-weight: 700 !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                gap: 0.5rem !important;
-                cursor: pointer !important;
-                width: 100% !important;
-                min-width: 100% !important;
-                text-align: center !important;
+                color: #ffffff !important;
+                border: none;
+                border-radius: 0.375rem;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                width: 100%;
+                display: block;
             }
             
             button:hover,
-            .fi-btn:hover,
-            [role="button"]:hover {
+            [type="submit"]:hover {
                 background-color: #4333cf !important;
-            }
-            
-            /* Ensure all nested text is white */
-            button *,
-            .fi-btn *,
-            [role="button"] * {
-                color: white !important;
-                fill: white !important;
-                stroke: white !important;
-                opacity: 1 !important;
-            }
-            
-            /* Specific button text styling */
-            button span,
-            button strong,
-            button em,
-            button label,
-            .fi-btn span,
-            .fi-btn strong,
-            .fi-btn em,
-            .fi-btn label {
-                color: white !important;
-                font-size: 1.25rem !important;
-                font-weight: 700 !important;
-            }
-            
-            /* SVG icons in buttons */
-            button svg,
-            .fi-btn svg,
-            [role="button"] svg {
-                width: 1.5rem !important;
-                height: 1.5rem !important;
-                fill: white !important;
-                stroke: white !important;
-                display: inline-block !important;
-            }
-            
-            /* Remove any opacity or visibility issues */
-            button, .fi-btn, [role="button"] {
-                visibility: visible !important;
-                opacity: 1 !important;
-            }
-            
-            .fi-input {
-                display: block !important;
-                width: 100% !important;
-            }
-            
-            .fi-form-section label {
-                display: block !important;
-                color: #374151 !important;
-                font-weight: 500 !important;
-                margin-bottom: 0.5rem !important;
-            }
-            
-            input[type="text"],
-            input[type="email"],
-            input[type="password"] {
-                width: 100% !important;
-                padding: 0.5rem 0.75rem !important;
-                border: 1px solid #d1d5db !important;
-                border-radius: 0.375rem !important;
-                font-size: 1rem !important;
             }
         </style>
     </head>
@@ -136,13 +66,9 @@
                     <div class="bg-white rounded-lg shadow-lg p-8 space-y-6">
                         {{ $this->form }}
                         
-                        <div class="flex flex-col gap-3 w-full">
+                        <div class="mt-6">
                             @foreach($this->getFormActions() as $action)
-                                <div class="w-full" style="display: flex; width: 100%;">
-                                    <div style="flex: 1; width: 100%;">
-                                        {{ $action }}
-                                    </div>
-                                </div>
+                                {{ $action }}
                             @endforeach
                         </div>
                     </div>
