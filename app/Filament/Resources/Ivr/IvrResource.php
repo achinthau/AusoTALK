@@ -6,7 +6,7 @@ use App\Filament\Resources\Ivr\Pages\AnalyticsIvr;
 use App\Filament\Resources\Ivr\Pages\ListIvr;
 use App\Filament\Resources\Ivr\Schemas\IvrForm;
 use App\Filament\Resources\Ivr\Tables\IvrTable;
-use App\Models\AuIvrCall;
+use App\Models\Callcount;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -14,7 +14,7 @@ use Illuminate\Support\HtmlString;
 
 class IvrResource extends Resource
 {
-    protected static ?string $model = AuIvrCall::class;
+    protected static ?string $model = Callcount::class;
 
     public static function getNavigationIcon(): HtmlString
     {
