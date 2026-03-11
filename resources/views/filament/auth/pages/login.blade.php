@@ -14,7 +14,7 @@
     </head>
     <body class="antialiased m-0 p-0">
         <div class="flex h-screen bg-white m-0 p-0">
-            <!-- Left side: Company Image - Full 2/3 width covering full background -->
+            <!-- Left side: Company Image - 2/3 width covering full background -->
             <div class="hidden md:flex md:w-2/3 items-center justify-center m-0 p-0 overflow-hidden">
                 @if(file_exists(public_path('images/company_image/login_com.png')))
                     <img 
