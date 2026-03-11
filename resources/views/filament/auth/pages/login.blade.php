@@ -11,6 +11,31 @@
         <meta name="csrf-token" content="{{ csrf_token() }}" />
         <title>{{ config('app.name') }} - Login</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <style>
+            /* Ensure login button is properly sized and visible */
+            .fi-btn-group {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 0.75rem !important;
+                width: 100% !important;
+            }
+            
+            .fi-btn {
+                display: block !important;
+                width: 100% !important;
+                padding: 0.625rem 1rem !important;
+                font-size: 1rem !important;
+                min-height: 2.5rem !important;
+            }
+            
+            /* Target authenticate button specifically */
+            button[type="submit"],
+            [type="button"] {
+                min-width: auto !important;
+                width: 100% !important;
+                padding: 0.625rem 1rem !important;
+            }
+        </style>
     </head>
     <body class="antialiased m-0 p-0">
         <div class="fixed inset-0 m-0 p-0 flex">
@@ -45,9 +70,11 @@
                     <div class="bg-white rounded-lg shadow-lg p-8 space-y-6">
                         {{ $this->form }}
                         
-                        @foreach($this->getFormActions() as $action)
-                            {{ $action }}
-                        @endforeach
+                        <div class="fi-btn-group">
+                            @foreach($this->getFormActions() as $action)
+                                {{ $action }}
+                            @endforeach
+                        </div>
                     </div>
 
                     <!-- Footer Links -->
