@@ -22,6 +22,8 @@ class AgentsWidget extends Widget
 
     public ?int $selectedBranchId = null;
 
+    public ?int $selectedDepartmentId = null;
+
     /**
      * Store agent on-call status for reactive updates
      */
@@ -169,6 +171,10 @@ class AgentsWidget extends Widget
             $agentsQuery->where('branch_id', $branchId);
         }
 
+        if ($this->selectedDepartmentId) {
+            $agentsQuery->where('department_id', $this->selectedDepartmentId);
+        }
+
         $agents = $agentsQuery
             ->with(['department'])
             ->orderBy('name')
@@ -188,6 +194,53 @@ class AgentsWidget extends Widget
         ksort($result);
 
         return $result;
+    }
+
+    public function getDepartments(): \Illuminate\Database\Eloquent\Collection
+    {
+        $user = auth()->user();
+
+        // Determine which company_id to use for filtering
+        $companyId = null;
+        if ($user?->hasRole('super_admin')) {
+            if ($this->selectedCompanyId === 0 || $this->selectedCompanyId === '0') {
+                $companyId = null;
+            } else {
+                $companyId = $this->selectedCompanyId ?? $user->company_id;
+            }
+        } else {
+            $companyId = $user?->company_id;
+        }
+
+        // Determine which branch_id to use for filtering
+        $branchId = null;
+        if ($this->selectedBranchId) {
+            $branchId = $this->selectedBranchId;
+        } elseif (! $user?->hasRole('super_admin') && $user?->branch_id) {
+            $branchId = $user->branch_id;
+        }
+
+        // Get departments from agents
+        $agentsQuery = User::query();
+
+        if ($companyId) {
+            $agentsQuery->where('company_id', $companyId);
+        }
+
+        if ($branchId) {
+            $agentsQuery->where('branch_id', $branchId);
+        }
+
+        $departmentIds = $agentsQuery
+            ->distinct()
+            ->pluck('department_id')
+            ->filter();
+
+        $departments = \App\Models\Department::whereIn('id', $departmentIds)
+            ->orderBy('name')
+            ->get();
+
+        return $departments;
     }
 
     /**

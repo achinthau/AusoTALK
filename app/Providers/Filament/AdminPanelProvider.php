@@ -77,6 +77,12 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => '
                 <style>
                     .fi-simple-header-heading { display: none; }
+                    .fi-page-heading { display: none !important; }
+                    .fi-header-heading { display: none !important; }
+                    .fi-page { padding-top: 0 !important; }
+                    .fi-main-content { padding-top: 0 !important; }
+                    .fi-widgets { padding-top: 0 !important; margin-top: 0 !important; }
+                    .fi-header { padding-top: 0 !important; padding-bottom: 0 !important; margin-top: 0 !important; margin-bottom: 0 !important; }
                     .fi-simple-layout .fi-logo { height: 4rem !important; }
                     .fi-topbar .fi-logo { height: 2rem !important; }
                     .fi-sidebar { background-color: #e5e7eb !important; }
@@ -96,6 +102,10 @@ class AdminPanelProvider extends PanelProvider
                         background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27f3f4f6%27%3E%3Crect y=%275%27 width=%2724%27 height=%272%27/%3E%3Crect y=%2711%27 width=%2724%27 height=%272%27/%3E%3Crect y=%2717%27 width=%2724%27 height=%272%27/%3E%3C/svg%3E");
                     }
                     .fi-header .fi-breadcrumbs {
+                        display: none !important;
+                    }
+                    .fi-header .fi-header-heading:empty,
+                    .fi-header-heading:empty {
                         display: none !important;
                     }
                     .fi-header .fi-header-heading,

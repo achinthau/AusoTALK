@@ -1,26 +1,10 @@
 <x-filament-widgets::widget class="w-full">
-    <!-- Header with Toggle Button -->
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-        {{-- <h3 style="font-size: 1.125rem; font-weight: 600; color: #111827; margin: 0;">Agents</h3> --}}
-        <h3> </h3>
-        <button 
-            wire:click="toggleExpand"
-            style="background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; transition: all 0.2s;"
-            onmouseover="this.style.backgroundColor='#e5e7eb'; this.style.borderColor='#9ca3af';"
-            onmouseout="this.style.backgroundColor='#f3f4f6'; this.style.borderColor='#d1d5db';"
-        >
-            <svg style="width: 1.25rem; height: 1.25rem; transform: {{ $this->isExpanded ? 'rotate(0deg)' : 'rotate(180deg)' }}; transition: transform 0.2s;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
-            </svg>
-        </button>
-    </div>
-
     @if($this->isExpanded)
-    <!-- Filters Section -->
-    <div style="margin-bottom: 0.5rem;">
-        <!-- Super Admin: Company and Branch Filters -->
+    <!-- Filters Section with Toggle Button -->
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: flex-start;">
+        <!-- Super Admin: Company, Branch, and Department Filters -->
         @if(auth()->user()?->hasRole('super_admin'))
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.25rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; flex: 1;">
                 <!-- Company Filter -->
                 <div style="border-radius: 0.5rem; background: linear-gradient(to right, #eff6ff, #ecf9f9); padding: 0.5rem; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 0.5rem;">
                     <label for="company-filter" style="font-size: 0.875rem; font-weight: 600; color: #374151; white-space: nowrap;">
@@ -62,40 +46,90 @@
                         @endforeach
                     </select>
                 </div>
-            </div>
-        @else
-            <!-- Non-Super Admin: Branch Filter Only -->
-            @if($this->getBranches()->count() > 0)
+
+                <!-- Department Filter -->
                 <div style="border-radius: 0.5rem; background: linear-gradient(to right, #eff6ff, #ecf9f9); padding: 0.5rem; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="branch-filter" style="font-size: 0.875rem; font-weight: 600; color: #374151; white-space: nowrap;">
-                        Select Branch
+                    <label for="department-filter" style="font-size: 0.875rem; font-weight: 600; color: #374151; white-space: nowrap;">
+                        Select Department
                     </label>
                     <select 
-                        id="branch-filter" 
-                        wire:model.live="selectedBranchId"
+                        id="department-filter" 
+                        wire:model.live="selectedDepartmentId"
                         style="flex: 1; border-radius: 0.5rem; border: 2px solid #93c5fd; background-color: white; padding: 0.625rem 1rem; font-size: 0.875rem; font-weight: 500; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.3s; cursor: pointer;"
                         onmouseover="this.style.borderColor='#60a5fa'; this.style.boxShadow='0 4px 6px rgba(59,130,246,0.1)';"
                         onmouseout="this.style.borderColor='#93c5fd'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';"
                         onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1)';"
                         onblur="this.style.borderColor='#93c5fd'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';"
                     >
-                        <option value="">Select Branch</option>
-                        @foreach($this->getBranches() as $branch)
-                            <option value="{{ $branch->id }}" @selected($this->selectedBranchId === $branch->id)>{{ $branch->name }}</option>
+                        <option value="">All Departments</option>
+                        @foreach($this->getDepartments() as $department)
+                            <option value="{{ $department->id }}">{{ $department->name }}</option>
                         @endforeach
                     </select>
                 </div>
-            @endif
+            </div>
+        @else
+            <!-- Non-Super Admin: Branch and Department Filters -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; flex: 1;">
+                @if($this->getBranches()->count() > 0)
+                    <div style="border-radius: 0.5rem; background: linear-gradient(to right, #eff6ff, #ecf9f9); padding: 0.5rem; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 0.5rem;">
+                        <label for="branch-filter" style="font-size: 0.875rem; font-weight: 600; color: #374151; white-space: nowrap;">
+                            Select Branch
+                        </label>
+                        <select 
+                            id="branch-filter" 
+                            wire:model.live="selectedBranchId"
+                            style="flex: 1; border-radius: 0.5rem; border: 2px solid #93c5fd; background-color: white; padding: 0.625rem 1rem; font-size: 0.875rem; font-weight: 500; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.3s; cursor: pointer;"
+                            onmouseover="this.style.borderColor='#60a5fa'; this.style.boxShadow='0 4px 6px rgba(59,130,246,0.1)';"
+                            onmouseout="this.style.borderColor='#93c5fd'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';"
+                            onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1)';"
+                            onblur="this.style.borderColor='#93c5fd'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';"
+                        >
+                            <option value="">Select Branch</option>
+                            @foreach($this->getBranches() as $branch)
+                                <option value="{{ $branch->id }}" @selected($this->selectedBranchId === $branch->id)>{{ $branch->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+
+                <!-- Department Filter -->
+                <div style="border-radius: 0.5rem; background: linear-gradient(to right, #eff6ff, #ecf9f9); padding: 0.5rem; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="department-filter" style="font-size: 0.875rem; font-weight: 600; color: #374151; white-space: nowrap;">
+                        Select Department
+                    </label>
+                    <select 
+                        id="department-filter" 
+                        wire:model.live="selectedDepartmentId"
+                        style="flex: 1; border-radius: 0.5rem; border: 2px solid #93c5fd; background-color: white; padding: 0.625rem 1rem; font-size: 0.875rem; font-weight: 500; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.3s; cursor: pointer;"
+                        onmouseover="this.style.borderColor='#60a5fa'; this.style.boxShadow='0 4px 6px rgba(59,130,246,0.1)';"
+                        onmouseout="this.style.borderColor='#93c5fd'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';"
+                        onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1)';"
+                        onblur="this.style.borderColor='#93c5fd'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';"
+                    >
+                        <option value="">All Departments</option>
+                        @foreach($this->getDepartments() as $department)
+                            <option value="{{ $department->id }}">{{ $department->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
         @endif
+
+        <!-- Toggle Button -->
+        <button 
+            wire:click="toggleExpand"
+            style="background: transparent; border: none; color: #374151; padding: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; transition: all 0.2s; flex-shrink: 0;"
+        >
+            <svg style="width: 1.5rem; height: 1.5rem; transform: {{ $this->isExpanded ? 'rotate(0deg)' : 'rotate(180deg)' }}; transition: transform 0.2s;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+            </svg>
+        </button>
     </div>
 
     <!-- Agents Section -->
-    <div style="margin-bottom: 2rem;">
-        {{-- <h3 style="font-size: 1rem; font-weight: 700; color: #111827; margin-bottom: 1rem;">Agents</h3> --}}
-        @forelse($this->getExtensionsByDepartment() as $department => $agents)
-            <!-- Department Title -->
-            <h4 style="font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.75rem; margin-top: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e5e7eb;">{{ $department }}</h4>
-            
+    <div style="margin-bottom: 2rem; margin-top: 1rem;">
+        @forelse($this->getExtensionsByDepartment() as $agents)
             <!-- Agents in Department -->
             <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; width: 100%; max-width: 100%; margin-bottom: 1rem;">
                 @forelse($agents as $agent)
@@ -114,24 +148,45 @@
                             <span style="margin-top: 0.25rem;" class="flex h-2.5 w-2.5 rounded-full agent-status-dot {{ $agent->is_logged_in ? 'bg-green-500' : 'bg-green-400' }}"></span>
                         </div>
 
-                        <!-- Right: Name and Extensions -->
+                        <!-- Right: Name and Extension -->
                         <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem;">
                             <!-- Name -->
                             <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; flex: 1; margin: 0;" class="font-semibold text-sm text-gray-900">{{ $agent->name }}</h3>
                             
-                            <!-- Extensions -->
-                            @if($agent->primary_extension || $agent->secondary_extension)
-                                <p class="text-xs text-gray-600">
-                                    @if($agent->primary_extension)
-                                        <span>[P:{{ $agent->primary_extension }}]</span>
-                                    @endif
-                                    @if($agent->secondary_extension)
-                                        <span>{{ $agent->primary_extension ? ' ' : '' }}[S:{{ $agent->secondary_extension }}]</span>
-                                    @endif
-                                </p>
+                            <!-- Primary Extension -->
+                            @if($agent->primary_extension)
+                                <p class="text-xs text-gray-600">{{ $agent->primary_extension }}</p>
                             @endif
                         </div>
                     </div>
+
+                    <!-- Secondary Extension Card -->
+                    @if($agent->secondary_extension)
+                    <div 
+                        style="width: calc(16.666% - 0.625rem); display: flex; align-items: flex-start; gap: 0.5rem; border: 3px solid #c1c1c1; border-radius: 1.8rem;" 
+                        class="shadow p-4 transition-all duration-200 bg-gray-50 agent-item" 
+                        data-agent-id="{{ $agent->id }}"
+                    >
+                        <!-- Left: Phone SVG -->
+                        <div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center;">
+                            <svg style="width: 2rem; height: 2rem; margin-top: 0.25rem; margin-left: 0.25rem; color: #104d76;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z" fill="currentColor"></path>
+                            </svg>
+                            <!-- Status Dot -->
+                            <span style="margin-top: 0.25rem;" class="flex h-2.5 w-2.5 rounded-full agent-status-dot bg-gray-400"></span>
+                        </div>
+
+                        <!-- Right: Name and Secondary Extension -->
+                        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem;">
+                            <!-- Name -->
+                            <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; flex: 1; margin: 0;" class="font-semibold text-sm text-gray-900">{{ $agent->name }}</h3>
+                            
+                            <!-- Secondary Extension -->
+                            <p class="text-xs text-gray-600">{{ $agent->secondary_extension }}</p>
+                        </div>
+                    </div>
+                    @endif
                 @empty
                     <div style="width: 100%; text-center py-4 text-gray-500;">
                         <p>No agents in this department</p>
@@ -146,5 +201,17 @@
     </div>
 
     <!-- No additional script needed - polling is handled by app.js agent-polling module -->
+    @else
+    <!-- Collapsed Header -->
+    <div style="display: flex; align-items: center; justify-content: flex-end; padding: 0.5rem 0;">
+        <button 
+            wire:click="toggleExpand"
+            style="background: transparent; border: none; color: #374151; padding: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; transition: all 0.2s;"
+        >
+            <svg style="width: 1.5rem; height: 1.5rem; transform: {{ $this->isExpanded ? 'rotate(0deg)' : 'rotate(180deg)' }}; transition: transform 0.2s;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+            </svg>
+        </button>
+    </div>
     @endif
 </x-filament-widgets::widget>
