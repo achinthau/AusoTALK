@@ -10,20 +10,32 @@ const agentPoller = {
     isActive: false,
 
     /**
-     * Update agent element border color
+     * Update agent element border color based on call type
      */
-    updateElement(agentId, isOnCall) {
+    updateElement(agentId, isOnCall, callType) {
         const selector = `[data-agent-id="${agentId}"]`;
         const elements = document.querySelectorAll(selector);
 
         elements.forEach(element => {
-            const newColor = isOnCall ? '#16a34a' : '#c1c1c1';
+            const extType = element.getAttribute('data-extension-type');
+            const isThisExtOnCall = isOnCall && callType === extType;
+            const newColor = isThisExtOnCall ? '#16a34a' : '#c1c1c1';
             const oldColor = element.style.borderColor;
 
             if (oldColor !== newColor) {
                 element.style.borderColor = newColor;
                 element.style.transition = 'border-color 0.3s ease';
-                console.log(`[Agent Polling] Agent ${agentId}: ${isOnCall ? 'ON CALL ✓' : 'FREE'}`);
+                if (isThisExtOnCall) {
+                    console.log(`[Agent Polling] Agent ${agentId} (${extType}): ON CALL ✓`);
+                }
+            }
+
+            // Toggle Alpine isOnCall state for phone icon visibility
+            if (window.Alpine) {
+                const data = window.Alpine.$data(element);
+                if (data && data.isOnCall !== isThisExtOnCall) {
+                    data.isOnCall = isThisExtOnCall;
+                }
             }
         });
     },
@@ -40,7 +52,7 @@ const agentPoller = {
             .then(res => res.json())
             .then(data => {
                 if (data && data.isOnCall !== undefined) {
-                    this.updateElement(agentId, data.isOnCall);
+                    this.updateElement(agentId, data.isOnCall, data.callType || 'primary');
                 }
             })
             .catch(err => {
@@ -53,12 +65,14 @@ const agentPoller = {
      */
     pollAllAgents() {
         const agentElements = document.querySelectorAll('[data-agent-id]');
+        const seenIds = new Set();
 
         if (agentElements.length === 0) return;
 
         agentElements.forEach(element => {
             const agentId = element.getAttribute('data-agent-id');
-            if (agentId) {
+            if (agentId && !seenIds.has(agentId)) {
+                seenIds.add(agentId);
                 this.pollAgent(agentId);
             }
         });
@@ -137,8 +151,8 @@ if (document.readyState === 'loading') {
     agentPoller.start();
 }
 
-// Restart polling when Livewire updates (for Filament navigation)
-document.addEventListener('livewire:updated', () => {
+// Restart polling when Livewire navigates to a new page (for Filament navigation)
+document.addEventListener('livewire:navigated', () => {
     agentPoller.restart();
 });
 
@@ -146,7 +160,7 @@ document.addEventListener('livewire:updated', () => {
 window.addEventListener('agent-status-updated', (event) => {
     const data = event.detail;
     if (data && data.userId) {
-        agentPoller.updateElement(data.userId, data.isOnCall);
+        agentPoller.updateElement(data.userId, data.isOnCall, data.type || 'primary');
     }
 });
 

@@ -27,6 +27,7 @@ class StoreAnsweredCall extends FormRequest
             // 'agent' => ['required', 'string'],
             'unique_id' => ['nullable', 'string'],
             'tenant' => ['required', 'string'],
+            'type' => ['required', 'string', 'in:primary,secondary'],
         ];
     }
 }

@@ -86,7 +86,7 @@
 
     <!-- Content Section -->
     @if($this->isExpanded)
-    <div class="stat-grid" x-data x-on:statistics-updated.window="$wire.refreshStats()">
+    <div class="stat-grid" wire:poll.2s="refreshStats" x-data x-on:statistics-updated.window="$wire.refreshStats()">
 
         {{-- Row 1: Inbound, Outbound, Internal --}}
 

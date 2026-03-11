@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Route;
 
-function broadcastAgentStatus(int $userId, int $companyId, bool $isOnCall): void
+function broadcastAgentStatus(int $userId, int $companyId, bool $isOnCall, string $type = 'primary'): void
 {
     try {
         Http::timeout(2)->post('http://localhost:'.config('services.ws.port').'/broadcast', [
@@ -19,6 +19,7 @@ function broadcastAgentStatus(int $userId, int $companyId, bool $isOnCall): void
                 'userId' => $userId,
                 'companyId' => $companyId,
                 'isOnCall' => $isOnCall,
+                'type' => $type,
             ],
         ]);
     } catch (\Exception $e) {
@@ -30,9 +31,9 @@ Route::match(['GET', 'POST'], '/pbx-call-answered', function (StoreAnsweredCall 
     Log::info($request->all());
 
     $tenant = $request['tenant'];
-    $agent = User::where('primary_extension', $request['dnis'])
-        ->orWhere('secondary_extension', $request['dnis'])
-        ->first();
+    $type = $request['type'];
+    $extensionField = $type === 'primary' ? 'primary_extension' : 'secondary_extension';
+    $agent = User::where($extensionField, $request['dnis'])->first();
 
     if (! $agent) {
         Log::warning('pbx-call-answered: no user with extension '.$request['dnis']);
@@ -42,11 +43,14 @@ Route::match(['GET', 'POST'], '/pbx-call-answered', function (StoreAnsweredCall 
 
     $redis = Redis::connection()->client();
     $redis->select(1);
-    $redis->set('agent_on_call-'.$tenant.'-'.$agent->id, $request['dnis']);
+    $redis->set('agent_on_call-'.$tenant.'-'.$agent->id, json_encode([
+        'extension' => $request['dnis'],
+        'type' => $type,
+    ]));
     $redis->set('call-'.$tenant.'-'.$request['dnis'], $agent->id);
 
     // Broadcast agent status update to WebSocket
-    broadcastAgentStatus($agent->id, $agent->company_id, true);
+    broadcastAgentStatus($agent->id, $agent->company_id, true, $type);
 
     return response()->json(['status' => 'ok']);
 });
@@ -55,9 +59,9 @@ Route::match(['GET', 'POST'], '/pbx-call-disconnected', function (StoreAnsweredC
     Log::info($request->all());
 
     $tenant = $request['tenant'];
-    $agent = User::where('primary_extension', $request['dnis'])
-        ->orWhere('secondary_extension', $request['dnis'])
-        ->first();
+    $type = $request['type'];
+    $extensionField = $type === 'primary' ? 'primary_extension' : 'secondary_extension';
+    $agent = User::where($extensionField, $request['dnis'])->first();
 
     if (! $agent) {
         Log::warning('pbx-call-disconnected: no user with extension '.$request['dnis']);
@@ -71,7 +75,7 @@ Route::match(['GET', 'POST'], '/pbx-call-disconnected', function (StoreAnsweredC
     $redis->del('call-'.$tenant.'-'.$request['dnis']);
 
     // Broadcast agent status update to WebSocket
-    broadcastAgentStatus($agent->id, $agent->company_id, false);
+    broadcastAgentStatus($agent->id, $agent->company_id, false, $type);
 
     return response()->json(['status' => 'ok']);
 });
@@ -84,15 +88,22 @@ Route::get('/agents/{agentId}/status', function ($agentId) {
     }
 
     $isOnCall = false;
+    $callType = null;
     if ($agent->company) {
         $redis = Redis::connection()->client();
         $redis->select(1);
-        $isOnCall = (bool) $redis->exists("agent_on_call-{$agent->company->context}-{$agent->id}");
+        $callData = $redis->get("agent_on_call-{$agent->company->context}-{$agent->id}");
+        if ($callData) {
+            $isOnCall = true;
+            $decoded = json_decode($callData, true);
+            $callType = $decoded['type'] ?? 'primary';
+        }
     }
 
     return response()->json([
         'agentId' => $agent->id,
         'isOnCall' => $isOnCall,
+        'callType' => $callType,
     ]);
 });
 

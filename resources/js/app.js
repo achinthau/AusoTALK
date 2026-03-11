@@ -87,22 +87,37 @@ window.agentStatusPoller = {
         console.log('[Agent Poller] Starting agent status polling...');
 
         this.pollInterval = setInterval(() => {
+            const seenIds = new Set();
             document.querySelectorAll('[data-agent-id]').forEach((element) => {
                 const agentId = element.getAttribute('data-agent-id');
-                if (agentId) {
+                if (agentId && !seenIds.has(agentId)) {
+                    seenIds.add(agentId);
                     fetch(`/api/agents/${agentId}/status`, {
                         headers: { 'Accept': 'application/json' }
                     })
                         .then(res => res.json())
                         .then(data => {
                             if (data && data.isOnCall !== undefined) {
-                                const borderColor = data.isOnCall ? '#16a34a' : '#c1c1c1';
-                                const currentColor = element.style.borderColor;
-                                if (currentColor !== borderColor) {
-                                    element.style.borderColor = borderColor;
-                                    element.style.transition = 'border-color 0.3s ease';
-                                    console.log(`[Agent Poller] Updated agent ${agentId}: ${data.isOnCall ? 'on call' : 'free'}`);
-                                }
+                                const callType = data.callType || 'primary';
+                                document.querySelectorAll(`[data-agent-id="${agentId}"]`).forEach((el) => {
+                                    const extType = el.getAttribute('data-extension-type');
+                                    const isThisExtOnCall = data.isOnCall && callType === extType;
+                                    const borderColor = isThisExtOnCall ? '#16a34a' : '#c1c1c1';
+                                    if (el.style.borderColor !== borderColor) {
+                                        el.style.borderColor = borderColor;
+                                        el.style.transition = 'border-color 0.3s ease';
+                                        if (isThisExtOnCall) {
+                                            console.log(`[Agent Poller] Updated agent ${agentId} (${extType}): on call`);
+                                        }
+                                    }
+                                    // Toggle Alpine isOnCall state for phone icon visibility
+                                    if (window.Alpine) {
+                                        const alpineData = window.Alpine.$data(el);
+                                        if (alpineData && alpineData.isOnCall !== isThisExtOnCall) {
+                                            alpineData.isOnCall = isThisExtOnCall;
+                                        }
+                                    }
+                                });
                             }
                         })
                         .catch(err => console.error(`[Agent Poller] Error for agent ${agentId}:`, err));

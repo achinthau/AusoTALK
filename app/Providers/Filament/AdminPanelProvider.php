@@ -249,6 +249,10 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::BODY_END,
+                fn (): \Illuminate\Support\HtmlString => app(\Illuminate\Foundation\Vite::class)(['resources/js/app.js']),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
                 fn (): string => '<script>
                     function collapseNavigationGroups() {
                         const buttons = document.querySelectorAll(".fi-sidebar-group > button");
