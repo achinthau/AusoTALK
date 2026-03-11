@@ -8,7 +8,7 @@
                 <!-- Company Filter -->
                 <div style="border-radius: 0.5rem; background: linear-gradient(to right, #eff6ff, #ecf9f9); padding: 0.5rem; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 0.5rem;">
                     <label for="company-filter" style="font-size: 0.875rem; font-weight: 600; color: #374151; white-space: nowrap;">
-                        Select Company
+                        Company
                     </label>
                     <select 
                         id="company-filter" 
@@ -29,7 +29,7 @@
                 <!-- Branch Filter (for super admin) -->
                 <div style="border-radius: 0.5rem; background: linear-gradient(to right, #eff6ff, #ecf9f9); padding: 0.5rem; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 0.5rem;">
                     <label for="branch-filter" style="font-size: 0.875rem; font-weight: 600; color: #374151; white-space: nowrap;">
-                        Select Branch
+                        Branch
                     </label>
                     <select 
                         id="branch-filter" 
@@ -50,7 +50,7 @@
                 <!-- Department Filter -->
                 <div style="border-radius: 0.5rem; background: linear-gradient(to right, #eff6ff, #ecf9f9); padding: 0.5rem; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 0.5rem;">
                     <label for="department-filter" style="font-size: 0.875rem; font-weight: 600; color: #374151; white-space: nowrap;">
-                        Select Department
+                        Department
                     </label>
                     <select 
                         id="department-filter" 
@@ -85,7 +85,7 @@
                             onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1)';"
                             onblur="this.style.borderColor='#93c5fd'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';"
                         >
-                            <option value="">Select Branch</option>
+                            <option value="">All Branches</option>
                             @foreach($this->getBranches() as $branch)
                                 <option value="{{ $branch->id }}" @selected($this->selectedBranchId === $branch->id)>{{ $branch->name }}</option>
                             @endforeach
