@@ -2,16 +2,25 @@
 
 namespace App\Filament\Resources\Ivr\Tables;
 
+use AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade;
 use App\Filament\Exports\IvrExporter;
-use App\Models\AuIvrCall;
+use App\Models\Callcount;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\Exports\Enums\ExportFormat;
+use Filament\Actions\Exports\ExportColumn;
+use Filament\Actions\Exports\Jobs\CreateXlsxFile;
+use Filament\Actions\Exports\Jobs\ExportCompletion;
+use Filament\Actions\Exports\Jobs\PrepareCsvExport;
+use Filament\Actions\Exports\Models\Export;
+use Filament\Forms\Components\DatePicker;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Bus;
 
 class IvrTable
 {
@@ -21,9 +30,22 @@ class IvrTable
             ->defaultSort('date', 'desc')
             ->selectable()
             ->selectCurrentPageOnly(false)
+            ->query(
+                Callcount::query()
+                    ->where('status', 1)
+                    ->where(function (Builder $query) {
+                        $query->where(function (Builder $q) {
+                            $q->where('direction', 'in')
+                                ->whereRaw('CHAR_LENGTH(ani) > 6');
+                        })->orWhere(function (Builder $q) {
+                            $q->where('direction', 'out')
+                                ->whereRaw('CHAR_LENGTH(dnis) > 6');
+                        });
+                    })
+            )
             ->columns([
                 TextColumn::make('date')
-                    ->label('Call Date & Time')
+                    ->label('Date')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()
                     ->searchable(),
@@ -38,24 +60,28 @@ class IvrTable
                     ->sortable()
                     ->searchable(),
 
-                TextColumn::make('ivr')
-                    ->label('IVR')
+                TextColumn::make('direction')
+                    ->label('Direction')
                     ->sortable()
-                    ->searchable(),
-
-                TextColumn::make('bill_sec_duration')
-                    ->label('Duration')
-                    ->getStateUsing(function (AuIvrCall $record): string {
-                        return $record->bill_sec_duration;
+                    ->searchable()
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'in' => 'success',
+                        'out' => 'info',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'in' => 'Inbound',
+                        'out' => 'Outbound',
+                        default => $state,
                     }),
             ])
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('cdr'))
             ->filters([
                 Filter::make('date_range')
                     ->form([
-                        \Filament\Forms\Components\DatePicker::make('from_date')
+                        DatePicker::make('from_date')
                             ->label('From Date'),
-                        \Filament\Forms\Components\DatePicker::make('to_date')
+                        DatePicker::make('to_date')
                             ->label('To Date'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
@@ -70,12 +96,11 @@ class IvrTable
                             );
                     }),
 
-                SelectFilter::make('ivr')
-                    ->options(function (): array {
-                        return AuIvrCall::distinct('ivr')
-                            ->pluck('ivr', 'ivr')
-                            ->toArray();
-                    }),
+                SelectFilter::make('direction')
+                    ->options([
+                        'in' => 'Inbound',
+                        'out' => 'Outbound',
+                    ]),
             ])
             ->recordActions([
                 //
@@ -93,13 +118,13 @@ class IvrTable
 
                             // Get column map
                             $columnMap = collect(IvrExporter::getColumns())
-                                ->mapWithKeys(fn (\Filament\Actions\Exports\ExportColumn $column) => [
+                                ->mapWithKeys(fn (ExportColumn $column) => [
                                     $column->getName() => $column->getLabel(),
                                 ])
                                 ->all();
 
                             // Create export record
-                            $export = \Filament\Actions\Exports\Models\Export::make([
+                            $export = Export::make([
                                 'user_id' => auth()->id(),
                                 'exporter' => IvrExporter::class,
                                 'total_rows' => $records->count(),
@@ -112,27 +137,27 @@ class IvrTable
 
                             // Dispatch export job using Filament's internal pattern
                             $columnMap = collect(IvrExporter::getColumns())
-                                ->mapWithKeys(fn (\Filament\Actions\Exports\ExportColumn $column) => [
+                                ->mapWithKeys(fn (ExportColumn $column) => [
                                     $column->getName() => $column->getLabel(),
                                 ])
                                 ->all();
 
                             // Get the query for selected records only
                             $query = $records->toQuery();
-                            $serializedQuery = \AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade::serialize($query);
+                            $serializedQuery = EloquentSerializeFacade::serialize($query);
 
                             $formats = [ExportFormat::Csv, ExportFormat::Xlsx];
                             $hasXlsx = in_array(ExportFormat::Xlsx, $formats);
                             $hasCsv = in_array(ExportFormat::Csv, $formats);
 
-                            $makeCreateXlsxFileJob = fn () => new \Filament\Actions\Exports\Jobs\CreateXlsxFile(
+                            $makeCreateXlsxFileJob = fn () => new CreateXlsxFile(
                                 export: $export,
                                 columnMap: $columnMap,
                             );
 
                             $jobs = [
-                                \Illuminate\Support\Facades\Bus::batch([
-                                    app(\Filament\Actions\Exports\Jobs\PrepareCsvExport::class, [
+                                Bus::batch([
+                                    app(PrepareCsvExport::class, [
                                         'export' => $export,
                                         'query' => $serializedQuery,
                                         'columnMap' => $columnMap,
@@ -148,7 +173,7 @@ class IvrTable
                             }
 
                             // Add ExportCompletion
-                            $jobs[] = app(\Filament\Actions\Exports\Jobs\ExportCompletion::class, [
+                            $jobs[] = app(ExportCompletion::class, [
                                 'authGuard' => 'web',
                                 'export' => $export,
                                 'columnMap' => $columnMap,
@@ -161,9 +186,9 @@ class IvrTable
                                 $jobs[] = $makeCreateXlsxFileJob();
                             }
 
-                            \Illuminate\Support\Facades\Bus::chain($jobs)->dispatch();
+                            Bus::chain($jobs)->dispatch();
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Export Started')
                                 ->body('Exporting '.$records->count().' selected record(s)...')
                                 ->success()
