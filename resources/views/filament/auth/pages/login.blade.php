@@ -36,6 +36,27 @@
                 padding: 0.625rem 1rem !important;
             }
         </style>
+        <script>
+            // Maintain button size after Livewire CSS loads
+            document.addEventListener('DOMContentLoaded', function() {
+                const observer = new MutationObserver(function() {
+                    const buttons = document.querySelectorAll('button[type="submit"], .fi-btn-group button');
+                    buttons.forEach(btn => {
+                        btn.style.width = '100%';
+                        btn.style.padding = '0.625rem 1rem';
+                        btn.style.minHeight = '2.5rem';
+                        btn.style.display = 'block';
+                    });
+                });
+                
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['style', 'class']
+                });
+            });
+        </script>
     </head>
     <body class="antialiased m-0 p-0">
         <div class="fixed inset-0 m-0 p-0 flex">
@@ -70,9 +91,11 @@
                     <div class="bg-white rounded-lg shadow-lg p-8 space-y-6">
                         {{ $this->form }}
                         
-                        <div class="fi-btn-group">
+                        <div class="fi-btn-group" style="display: flex !important; flex-direction: column !important; gap: 0.75rem !important; width: 100% !important;">
                             @foreach($this->getFormActions() as $action)
-                                {{ $action }}
+                                <div style="width: 100% !important; display: block !important;">
+                                    {{ $action }}
+                                </div>
                             @endforeach
                         </div>
                     </div>
