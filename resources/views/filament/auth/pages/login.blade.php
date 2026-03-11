@@ -13,9 +13,9 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="antialiased m-0 p-0">
-        <div class="fixed inset-0 m-0 p-0">
-            <!-- Full Background Image -->
-            <div class="absolute inset-0 m-0 p-0 z-0">
+        <div class="fixed inset-0 m-0 p-0 flex">
+            <!-- Left 2/3: Background Image -->
+            <div class="w-2/3 m-0 p-0 z-0 overflow-hidden">
                 @if(file_exists(public_path('images/company_image/login_com.png')))
                     <img 
                         src="{{ asset('images/company_image/login_com.png') }}" 
@@ -27,8 +27,8 @@
                 @endif
             </div>
 
-            <!-- Login Panel Overlay -->
-            <div class="relative z-10 flex items-center justify-end h-screen px-8">
+            <!-- Right 1/3: Login Panel -->
+            <div class="w-1/3 flex items-center justify-center bg-gray-50 px-8 z-10">
                 <div class="w-full max-w-sm">
                     <!-- Logo and Title -->
                     <div class="text-center mb-8">
