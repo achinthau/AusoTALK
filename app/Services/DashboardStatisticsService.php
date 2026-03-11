@@ -18,6 +18,10 @@ class DashboardStatisticsService
             return null;
         }
 
+        if ($user->hasRole('super_admin')) {
+            return null;
+        }
+
         return $user->company->context;
     }
 
@@ -106,11 +110,6 @@ class DashboardStatisticsService
 
     public function getQueueWiseStatistics(): array
     {
-        $tenant = $this->getTenant();
-        if (! $tenant) {
-            return [];
-        }
-
         return DB::connection('mysql-voice')
             ->select('SELECT 
                 t1.queuename,
@@ -142,13 +141,15 @@ class DashboardStatisticsService
     public function getDialerQueueWiseStatistics(): array
     {
         $tenant = $this->getTenant();
-        if (! $tenant) {
-            return [];
+
+        $query = DB::connection('mysql-voice')
+            ->table('callcount');
+
+        if ($tenant) {
+            $query->where('tenant', $tenant);
         }
 
-        return DB::connection('mysql-voice')
-            ->table('callcount')
-            ->where('tenant', $tenant)
+        return $query
             ->whereNotNull('app')
             ->whereDate('date', '>', DB::raw('CURDATE()'))
             ->select(
@@ -188,18 +189,20 @@ class DashboardStatisticsService
         $cacheKey = $this->getCacheKey('calls', $tenant);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($tenant) {
-            if (! $tenant) {
-                return [];
-            }
-
             $sql = "SELECT
                 IFNULL(SUM(IF(a.direction = 'in' AND a.status=1, 1, 0)), 0) AS total_inbound_call_count,
                 IFNULL(SUM(IF(a.direction = 'out' AND a.status=1, 1, 0)), 0) AS total_outbound_call_count,
                 IFNULL(SUM(IF(a.direction = 'ext'AND a.status=1, 1, 0)), 0) AS total_internal_call_count
             FROM callcount a
-            WHERE a.date > CURDATE() AND a.tenant = ?";
+            WHERE a.date > CURDATE()";
 
-            $callData = DB::connection('mysql-voice')->select($sql, [$tenant])[0];
+            $bindings = [];
+            if ($tenant) {
+                $sql .= ' AND a.tenant = ?';
+                $bindings[] = $tenant;
+            }
+
+            $callData = DB::connection('mysql-voice')->select($sql, $bindings)[0];
 
             return [
                 'inbound' => (int) $callData->total_inbound_call_count,
@@ -259,12 +262,8 @@ class DashboardStatisticsService
         $cacheKey = $this->getCacheKey('ongoing', $tenant);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($tenant) {
-            if (! $tenant) {
-                return 0;
-            }
-
             Redis::connection()->client()->select(1);
-            $pattern = "agent_on_call-{$tenant}-*";
+            $pattern = $tenant ? "agent_on_call-{$tenant}-*" : 'agent_on_call-*';
             $keys = Redis::connection()->client()->keys($pattern);
 
             return count($keys);
@@ -276,11 +275,7 @@ class DashboardStatisticsService
         $tenant ??= $this->getTenant();
         $cacheKey = $this->getCacheKey('queue_wise', $tenant);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($tenant) {
-            if (! $tenant) {
-                return [];
-            }
-
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () {
             return DB::connection('mysql-voice')
                 ->select('SELECT 
                     t1.queuename,
@@ -316,13 +311,14 @@ class DashboardStatisticsService
         $cacheKey = $this->getCacheKey('dialer_queue_wise', $tenant);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($tenant) {
-            if (! $tenant) {
-                return [];
+            $query = DB::connection('mysql-voice')
+                ->table('callcount');
+
+            if ($tenant) {
+                $query->where('tenant', $tenant);
             }
 
-            return DB::connection('mysql-voice')
-                ->table('callcount')
-                ->where('tenant', $tenant)
+            return $query
                 ->whereNotNull('app')
                 ->whereDate('date', '>', DB::raw('CURDATE()'))
                 ->select(

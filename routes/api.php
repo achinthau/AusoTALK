@@ -107,6 +107,42 @@ Route::get('/agents/{agentId}/status', function ($agentId) {
     ]);
 });
 
+// Batch agent status endpoint - single request for all agents on the page
+Route::post('/agents/status-batch', function (\Illuminate\Http\Request $request) {
+    $agentIds = $request->input('ids', []);
+    if (! is_array($agentIds) || count($agentIds) === 0) {
+        return response()->json(['agents' => []]);
+    }
+
+    // Limit to 200 agents max to prevent abuse
+    $agentIds = array_slice(array_map('intval', $agentIds), 0, 200);
+
+    $agents = User::with('company')->whereIn('id', $agentIds)->get()->keyBy('id');
+
+    $redis = Redis::connection()->client();
+    $redis->select(1);
+
+    $results = [];
+    foreach ($agentIds as $id) {
+        $agent = $agents->get($id);
+        if (! $agent || ! $agent->company) {
+            $results[$id] = ['isOnCall' => false, 'callType' => null];
+
+            continue;
+        }
+
+        $callData = $redis->get("agent_on_call-{$agent->company->context}-{$id}");
+        if ($callData) {
+            $decoded = json_decode($callData, true);
+            $results[$id] = ['isOnCall' => true, 'callType' => $decoded['type'] ?? 'primary'];
+        } else {
+            $results[$id] = ['isOnCall' => false, 'callType' => null];
+        }
+    }
+
+    return response()->json(['agents' => $results]);
+});
+
 // Get call statistics (public endpoint for polling)
 Route::get('/call-statistics', function () {
     $service = app(DashboardStatisticsService::class);
