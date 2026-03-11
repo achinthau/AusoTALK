@@ -148,24 +148,45 @@
                             <span style="margin-top: 0.25rem;" class="flex h-2.5 w-2.5 rounded-full agent-status-dot {{ $agent->is_logged_in ? 'bg-green-500' : 'bg-green-400' }}"></span>
                         </div>
 
-                        <!-- Right: Name and Extensions -->
+                        <!-- Right: Name and Extension -->
                         <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem;">
                             <!-- Name -->
                             <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; flex: 1; margin: 0;" class="font-semibold text-sm text-gray-900">{{ $agent->name }}</h3>
                             
-                            <!-- Extensions -->
-                            @if($agent->primary_extension || $agent->secondary_extension)
-                                <p class="text-xs text-gray-600">
-                                    @if($agent->primary_extension)
-                                        <span>[P:{{ $agent->primary_extension }}]</span>
-                                    @endif
-                                    @if($agent->secondary_extension)
-                                        <span>{{ $agent->primary_extension ? ' ' : '' }}[S:{{ $agent->secondary_extension }}]</span>
-                                    @endif
-                                </p>
+                            <!-- Primary Extension -->
+                            @if($agent->primary_extension)
+                                <p class="text-xs text-gray-600">{{ $agent->primary_extension }}</p>
                             @endif
                         </div>
                     </div>
+
+                    <!-- Secondary Extension Card -->
+                    @if($agent->secondary_extension)
+                    <div 
+                        style="width: calc(16.666% - 0.625rem); display: flex; align-items: flex-start; gap: 0.5rem; border: 3px solid #c1c1c1; border-radius: 1.8rem;" 
+                        class="shadow p-4 transition-all duration-200 bg-gray-50 agent-item" 
+                        data-agent-id="{{ $agent->id }}"
+                    >
+                        <!-- Left: Phone SVG -->
+                        <div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center;">
+                            <svg style="width: 2rem; height: 2rem; margin-top: 0.25rem; margin-left: 0.25rem; color: #104d76;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z" fill="currentColor"></path>
+                            </svg>
+                            <!-- Status Dot -->
+                            <span style="margin-top: 0.25rem;" class="flex h-2.5 w-2.5 rounded-full agent-status-dot bg-gray-400"></span>
+                        </div>
+
+                        <!-- Right: Name and Secondary Extension -->
+                        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem;">
+                            <!-- Name -->
+                            <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; flex: 1; margin: 0;" class="font-semibold text-sm text-gray-900">{{ $agent->name }}</h3>
+                            
+                            <!-- Secondary Extension -->
+                            <p class="text-xs text-gray-600">{{ $agent->secondary_extension }}</p>
+                        </div>
+                    </div>
+                    @endif
                 @empty
                     <div style="width: 100%; text-center py-4 text-gray-500;">
                         <p>No agents in this department</p>
