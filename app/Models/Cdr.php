@@ -38,20 +38,12 @@ class Cdr extends Model
     public $timestamps = false;
 
     /**
-     * Get the extension from channel/dstchannel based on lastapp
+     * Get the extension from dstchannel (e.g. PJSIP/3000-00000006 -> 3000)
      */
     public function getExtensionAttribute(): ?string
     {
-        if ($this->lastapp === 'Queue') {
-            if ($this->dstchannel && preg_match('/\/(\d+)-/', $this->dstchannel, $matches)) {
-                return $matches[1];
-            }
-        } elseif ($this->lastapp === 'Dial') {
-            if (preg_match('/\/(\d+)@/', $this->channel, $matches)) {
-                return $matches[1];
-            } elseif ($this->channel && preg_match('/\/(\d+)-/', $this->channel, $matches)) {
-                return $matches[1];
-            }
+        if ($this->dstchannel && preg_match('/\/(\d+)-/', $this->dstchannel, $matches)) {
+            return $matches[1];
         }
 
         return null;

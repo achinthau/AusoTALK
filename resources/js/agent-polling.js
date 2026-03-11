@@ -1,6 +1,6 @@
 /**
- * Real-Time Agent Status & Call Statistics Polling
- * Automatically polls the API every 1 second and updates agent borders and call counts
+ * Real-Time Agent Status Polling
+ * Single batch request per poll cycle to avoid race conditions
  */
 
 console.log('[Agent Polling] Module loaded');
@@ -8,120 +8,96 @@ console.log('[Agent Polling] Module loaded');
 const agentPoller = {
     interval: null,
     isActive: false,
+    polling: false, // prevent overlapping requests
 
     /**
-     * Update agent element border color
+     * Update a single agent card's border + Alpine isOnCall state
      */
-    updateElement(agentId, isOnCall) {
-        const selector = `[data-agent-id="${agentId}"]`;
-        const elements = document.querySelectorAll(selector);
+    updateElement(agentId, isOnCall, callType) {
+        const elements = document.querySelectorAll(`[data-agent-id="${agentId}"]`);
 
         elements.forEach(element => {
-            const newColor = isOnCall ? '#16a34a' : '#c1c1c1';
-            const oldColor = element.style.borderColor;
+            const extType = element.getAttribute('data-extension-type');
+            const isThisExtOnCall = isOnCall && callType === extType;
+            const newColor = isThisExtOnCall ? '#16a34a' : '#c1c1c1';
 
-            if (oldColor !== newColor) {
+            if (element.style.borderColor !== newColor) {
                 element.style.borderColor = newColor;
                 element.style.transition = 'border-color 0.3s ease';
-                console.log(`[Agent Polling] Agent ${agentId}: ${isOnCall ? 'ON CALL ✓' : 'FREE'}`);
+            }
+
+            // Toggle Alpine isOnCall state for phone icon visibility
+            if (window.Alpine) {
+                const data = window.Alpine.$data(element);
+                if (data && data.isOnCall !== isThisExtOnCall) {
+                    data.isOnCall = isThisExtOnCall;
+                }
             }
         });
     },
 
     /**
-     * Poll a single agent status
-     */
-    pollAgent(agentId) {
-        fetch(`/api/agents/${agentId}/status`, {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
-            cache: 'no-cache'
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.isOnCall !== undefined) {
-                    this.updateElement(agentId, data.isOnCall);
-                }
-            })
-            .catch(err => {
-                // Silently fail for polling errors
-            });
-    },
-
-    /**
-     * Poll all agents on the page
+     * Batch-poll all agents in a single request
      */
     pollAllAgents() {
-        const agentElements = document.querySelectorAll('[data-agent-id]');
+        if (this.polling) return; // skip if previous request still pending
 
+        const agentElements = document.querySelectorAll('[data-agent-id]');
         if (agentElements.length === 0) return;
 
-        agentElements.forEach(element => {
-            const agentId = element.getAttribute('data-agent-id');
-            if (agentId) {
-                this.pollAgent(agentId);
-            }
+        const ids = new Set();
+        agentElements.forEach(el => {
+            const id = el.getAttribute('data-agent-id');
+            if (id) ids.add(id);
         });
-    },
 
-    /**
-     * Poll call statistics for the dashboard
-     */
-    pollStatistics() {
-        fetch('/api/call-statistics', {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
+        if (ids.size === 0) return;
+
+        this.polling = true;
+
+        fetch('/api/agents/status-batch', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids: [...ids] }),
             cache: 'no-cache'
         })
             .then(res => res.json())
             .then(data => {
-                if (data) {
-                    // Dispatch statistics-updated event for the widget to listen to
-                    window.dispatchEvent(new CustomEvent('statistics-updated', {
-                        detail: data
-                    }));
-                    console.log('[Agent Polling] Statistics updated:', data);
+                if (data && data.agents) {
+                    // Apply all statuses in one synchronous pass — no race conditions
+                    for (const [agentId, status] of Object.entries(data.agents)) {
+                        this.updateElement(agentId, status.isOnCall, status.callType || 'primary');
+                    }
                 }
             })
-            .catch(err => {
-                // Silently fail for polling errors
-            });
+            .catch(() => { /* silently fail */ })
+            .finally(() => { this.polling = false; });
     },
 
-    /**
-     * Start continuous polling
-     */
     start() {
         if (this.isActive) return;
-
         this.isActive = true;
-        console.log('[Agent Polling] Started - polling every 1 second');
+        console.log('[Agent Polling] Started');
 
-        // Poll immediately
         this.pollAllAgents();
-        this.pollStatistics();
 
-        // Then poll every 1 second
         this.interval = setInterval(() => {
             this.pollAllAgents();
-            this.pollStatistics();
         }, 1000);
     },
 
-    /**
-     * Stop polling
-     */
     stop() {
         if (this.interval) {
             clearInterval(this.interval);
+            this.interval = null;
             this.isActive = false;
-            console.log('[Agent Polling] Stopped');
+            this.polling = false;
         }
     },
 
-    /**
-     * Restart polling
-     */
     restart() {
         this.stop();
         setTimeout(() => this.start(), 100);
@@ -130,25 +106,20 @@ const agentPoller = {
 
 // Auto-start when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        agentPoller.start();
-    });
+    document.addEventListener('DOMContentLoaded', () => agentPoller.start());
 } else {
     agentPoller.start();
 }
 
-// Restart polling when Livewire updates (for Filament navigation)
-document.addEventListener('livewire:updated', () => {
-    agentPoller.restart();
-});
+// Restart on Livewire page navigation
+document.addEventListener('livewire:navigated', () => agentPoller.restart());
 
-// Listen for WebSocket events too
+// Listen for WebSocket events for instant updates
 window.addEventListener('agent-status-updated', (event) => {
     const data = event.detail;
     if (data && data.userId) {
-        agentPoller.updateElement(data.userId, data.isOnCall);
+        agentPoller.updateElement(data.userId, data.isOnCall, data.type || 'primary');
     }
 });
 
-// Export for debugging
 window.agentPoller = agentPoller;

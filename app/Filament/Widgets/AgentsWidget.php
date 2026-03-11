@@ -25,7 +25,10 @@ class AgentsWidget extends Widget
     public ?int $selectedDepartmentId = null;
 
     /**
-     * Store agent on-call status for reactive updates
+     * Store agent on-call status for reactive updates.
+     * Values: false (not on call), 'primary', or 'secondary'
+     *
+     * @var array<int, false|string>
      */
     public array $agentOnCallStatus = [];
 
@@ -245,8 +248,10 @@ class AgentsWidget extends Widget
 
     /**
      * Check if an agent is currently on a call using Redis.
+     *
+     * @return false|string Returns false if not on call, or the call type ('primary'/'secondary')
      */
-    public function isAgentOnCall(User $agent): bool
+    public function isAgentOnCall(User $agent): false|string
     {
         $company = $agent->company;
         if (! $company) {
@@ -257,8 +262,15 @@ class AgentsWidget extends Widget
         $redis->select(1);
 
         $key = "agent_on_call-{$company->context}-{$agent->id}";
+        $callData = $redis->get($key);
 
-        return (bool) $redis->exists($key);
+        if (! $callData) {
+            return false;
+        }
+
+        $decoded = json_decode($callData, true);
+
+        return $decoded['type'] ?? 'primary';
     }
 
     /**
