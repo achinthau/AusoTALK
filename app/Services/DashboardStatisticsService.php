@@ -88,8 +88,8 @@ class DashboardStatisticsService
         $tenant = $this->getTenant();
 
         $callActionSql = "SELECT
-            SUM(IF(status = 'ANSWER' AND CHAR_LENGTH(ani) < 6, 1, 0)) as answered_count,
-            SUM(IF(status IN ('CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CANCEL'), 1, 0)) as abandoned_count
+            SUM(IF(status = 'ANSWER' AND CHAR_LENGTH(ani) > 6, 1, 0)) as answered_count,
+            SUM(IF(status IN ('CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CANCEL') AND CHAR_LENGTH(ani) > 6, 1, 0)) as abandoned_count
             FROM pbx_callaction
             WHERE date > CURDATE()";
 
@@ -256,8 +256,8 @@ class DashboardStatisticsService
                 ) t1;')[0];
 
             $callActionSql = "SELECT
-                SUM(IF(status = 'ANSWER' AND CHAR_LENGTH(ani) < 6, 1, 0)) as answered_count,
-                SUM(IF(status IN ('CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CANCEL'), 1, 0)) as abandoned_count
+                SUM(IF(status = 'ANSWER' AND CHAR_LENGTH(ani) > 6, 1, 0)) as answered_count,
+                SUM(IF(status IN ('CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CANCEL') AND CHAR_LENGTH(ani) > 6, 1, 0)) as abandoned_count
                 FROM pbx_callaction
                 WHERE date > CURDATE()";
 
