@@ -1,5 +1,8 @@
-<x-filament-widgets::widget>
+<x-filament-widgets::widget class="m-0 p-0" style="margin: 0 !important; padding: 0 !important; padding-bottom: 2rem !important; margin-top: -1.5rem !important;">
     <style>
+        .fi-wi-widget {
+            margin-top: -1.5rem !important;
+        }
         .stat-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -69,16 +72,13 @@
     </style>
 
     <!-- Header with Toggle Button -->
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-        {{-- <h3 style="font-size: 1.125rem; font-weight: 600; color: #111827; margin: 0;">Call Statistics</h3> --}}
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25;">
         <h3> </h3>
         <button 
             wire:click="toggleExpand"
-            style="background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; transition: all 0.2s;"
-            onmouseover="this.style.backgroundColor='#e5e7eb'; this.style.borderColor='#9ca3af';"
-            onmouseout="this.style.backgroundColor='#f3f4f6'; this.style.borderColor='#d1d5db';"
+            style="background: transparent; border: none; color: #374151; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; transition: all 0.2s;"
         >
-            <svg style="width: 1.25rem; height: 1.25rem; transform: {{ $this->isExpanded ? 'rotate(0deg)' : 'rotate(180deg)' }}; transition: transform 0.2s;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <svg style="width: 1.5rem; height: 1.5rem; transform: {{ $this->isExpanded ? 'rotate(0deg)' : 'rotate(180deg)' }}; transition: transform 0.2s;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
             </svg>
         </button>
