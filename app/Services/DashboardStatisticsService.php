@@ -66,12 +66,10 @@ class DashboardStatisticsService
             SUM(t1.connected) as total_queue_count,
             SUM(t1.answered) as total_answered_count,
             SUM(t1.disconnected) as total_disconnection_count,
-            SUM(t1.abandoned) as abandoned_queue_count,
             SUM(t1.queue_wating_count) as queue_wating_count
 
             FROM (
             SELECT t.*,
-            IF(t.answered=0 AND t.disconnected=1 AND t.connected=1,1,0) as abandoned,
             IFNULL(IF(t.uniqueid NOT IN (SELECT DISTINCT  uniqueid  FROM queuecount aa WHERE aa.date > CURDATE() and aa.status IN (2,0)),1,0),0) as queue_wating_count
 
             FROM 
@@ -87,12 +85,26 @@ class DashboardStatisticsService
                  ) t
             ) t1;')[0];
 
-        $abandoned = (int) $queueData->abandoned_queue_count;
+        $tenant = $this->getTenant();
+
+        $abandonedSql = "SELECT COUNT(*) as abandoned_count
+            FROM pbx_callaction
+            WHERE status IN ('CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CANCEL')
+            AND date > CURDATE()";
+
+        $bindings = [];
+        if ($tenant) {
+            $abandonedSql .= ' AND tenant = ?';
+            $bindings[] = $tenant;
+        }
+
+        $abandonedData = DB::connection('mysql-voice')->select($abandonedSql, $bindings)[0];
+        $abandoned = (int) $abandonedData->abandoned_count;
 
         return [
             'queued' => (int) $queueData->total_queue_count,
             'answered' => (int) $queueData->total_answered_count,
-            'abandoned' => $abandoned < 0 ? 0 : $abandoned,
+            'abandoned' => $abandoned,
             'waiting' => (int) $queueData->queue_wating_count,
         ];
     }
@@ -218,18 +230,16 @@ class DashboardStatisticsService
         $tenant ??= $this->getTenant();
         $cacheKey = $this->getCacheKey('queue', $tenant);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () {
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($tenant) {
             $queueData = DB::connection('mysql-voice')
                 ->select('SELECT 
                 SUM(t1.connected) as total_queue_count,
                 SUM(t1.answered) as total_answered_count,
                 SUM(t1.disconnected) as total_disconnection_count,
-                SUM(t1.abandoned) as abandoned_queue_count,
                 SUM(t1.queue_wating_count) as queue_wating_count
 
                 FROM (
                 SELECT t.*,
-                IF(t.answered=0 AND t.disconnected=1 AND t.connected=1,1,0) as abandoned,
                 IFNULL(IF(t.uniqueid NOT IN (SELECT DISTINCT  uniqueid  FROM queuecount aa WHERE aa.date > CURDATE() and aa.status IN (2,0)),1,0),0) as queue_wating_count
 
                 FROM 
@@ -245,12 +255,24 @@ class DashboardStatisticsService
                      ) t
                 ) t1;')[0];
 
-            $abandoned = (int) $queueData->abandoned_queue_count;
+            $abandonedSql = "SELECT COUNT(*) as abandoned_count
+                FROM pbx_callaction
+                WHERE status IN ('CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CANCEL')
+                AND date > CURDATE()";
+
+            $bindings = [];
+            if ($tenant) {
+                $abandonedSql .= ' AND tenant = ?';
+                $bindings[] = $tenant;
+            }
+
+            $abandonedData = DB::connection('mysql-voice')->select($abandonedSql, $bindings)[0];
+            $abandoned = (int) $abandonedData->abandoned_count;
 
             return [
                 'queued' => (int) $queueData->total_queue_count,
                 'answered' => (int) $queueData->total_answered_count,
-                'abandoned' => $abandoned < 0 ? 0 : $abandoned,
+                'abandoned' => $abandoned,
                 'waiting' => (int) $queueData->queue_wating_count,
             ];
         });
