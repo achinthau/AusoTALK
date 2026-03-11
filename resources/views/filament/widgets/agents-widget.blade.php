@@ -74,7 +74,7 @@
                 @if($this->getBranches()->count() > 0)
                     <div style="border-radius: 0.5rem; background: linear-gradient(to right, #eff6ff, #ecf9f9); padding: 0.5rem; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 0.5rem;">
                         <label for="branch-filter" style="font-size: 0.875rem; font-weight: 600; color: #374151; white-space: nowrap;">
-                            Select Branch
+                            Branch
                         </label>
                         <select 
                             id="branch-filter" 
@@ -96,7 +96,7 @@
                 <!-- Department Filter -->
                 <div style="border-radius: 0.5rem; background: linear-gradient(to right, #eff6ff, #ecf9f9); padding: 0.5rem; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 0.5rem;">
                     <label for="department-filter" style="font-size: 0.875rem; font-weight: 600; color: #374151; white-space: nowrap;">
-                        Select Department
+                        Department
                     </label>
                     <select 
                         id="department-filter" 
