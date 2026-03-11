@@ -26,6 +26,10 @@
                 padding: 0.625rem 1rem !important;
                 font-size: 1rem !important;
                 min-height: 2.5rem !important;
+                color: white !important;
+                background-color: #4f46e5 !important;
+                opacity: 1 !important;
+                visibility: visible !important;
             }
             
             /* Target authenticate button specifically */
@@ -34,18 +38,50 @@
                 min-width: auto !important;
                 width: 100% !important;
                 padding: 0.625rem 1rem !important;
+                color: white !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            
+            /* Ensure all button text is white and visible */
+            button span,
+            .fi-btn span,
+            button strong,
+            .fi-btn strong {
+                color: white !important;
+                opacity: 1 !important;
+                visibility: visible !important;
             }
         </style>
         <script>
-            // Maintain button size after Livewire CSS loads
+            // Maintain button size and visibility after Livewire CSS loads
             document.addEventListener('DOMContentLoaded', function() {
                 const observer = new MutationObserver(function() {
-                    const buttons = document.querySelectorAll('button[type="submit"], .fi-btn-group button');
+                    const buttons = document.querySelectorAll('button[type="submit"], .fi-btn-group button, .fi-btn');
                     buttons.forEach(btn => {
                         btn.style.width = '100%';
                         btn.style.padding = '0.625rem 1rem';
                         btn.style.minHeight = '2.5rem';
                         btn.style.display = 'block';
+                        btn.style.color = 'white';
+                        btn.style.opacity = '1';
+                        btn.style.visibility = 'visible';
+                        btn.style.backgroundColor = '#4f46e5';
+                        
+                        // Also fix text color in all child elements
+                        const children = btn.querySelectorAll('*');
+                        children.forEach(child => {
+                            child.style.color = 'white';
+                            child.style.opacity = '1';
+                            child.style.visibility = 'visible';
+                        });
+                        
+                        // Ensure text node is visible
+                        Array.from(btn.childNodes).forEach(node => {
+                            if (node.nodeType === 3) { // Text node
+                                node.parentElement.style.color = 'white';
+                            }
+                        });
                     });
                 });
                 
@@ -94,7 +130,9 @@
                         <div class="fi-btn-group" style="display: flex !important; flex-direction: column !important; gap: 0.75rem !important; width: 100% !important;">
                             @foreach($this->getFormActions() as $action)
                                 <div style="width: 100% !important; display: block !important;">
-                                    {{ $action }}
+                                    <div style="width: 100% !important; color: white !important; opacity: 1 !important;">
+                                        {{ $action }}
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
