@@ -44,6 +44,10 @@
                     <!-- Filament Form Component -->
                     <div class="bg-white rounded-lg shadow-lg p-8 space-y-6">
                         {{ $this->form }}
+                        
+                        @foreach($this->getFormActions() as $action)
+                            {{ $action }}
+                        @endforeach
                     </div>
 
                     <!-- Footer Links -->
