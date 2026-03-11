@@ -5,7 +5,7 @@ namespace App\Filament\Resources\MissedCalls;
 use App\Filament\Resources\MissedCalls\Pages\ListMissedCalls;
 use App\Filament\Resources\MissedCalls\Schemas\MissedCallsForm;
 use App\Filament\Resources\MissedCalls\Tables\MissedCallsTable;
-use App\Models\AbandonedNew;
+use App\Models\PbxCallaction;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -14,7 +14,7 @@ use Filament\Tables\Table;
 
 class MissedCallsResource extends Resource
 {
-    protected static ?string $model = AbandonedNew::class;
+    protected static ?string $model = PbxCallaction::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhoneXMark;
 

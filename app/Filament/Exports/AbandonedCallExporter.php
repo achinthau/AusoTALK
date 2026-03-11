@@ -2,14 +2,14 @@
 
 namespace App\Filament\Exports;
 
-use App\Models\AbandonedNew;
+use App\Models\PbxCallaction;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 
 class AbandonedCallExporter extends Exporter
 {
-    protected static ?string $model = AbandonedNew::class;
+    protected static ?string $model = PbxCallaction::class;
 
     public static function getColumns(): array
     {
@@ -20,15 +20,17 @@ class AbandonedCallExporter extends Exporter
                 ->label('From'),
             ExportColumn::make('dnis')
                 ->label('To'),
-            ExportColumn::make('queuename')
-                ->label('Skill'),
-            ExportColumn::make('recalled_status')
-                ->label('Recalled Status')
-                ->formatStateUsing(fn ($state) => $state == 1 ? 'Recalled' : 'Not Recalled'),
-            ExportColumn::make('received_time')
-                ->label('Received'),
-            ExportColumn::make('recalled_time')
-                ->label('Recalled'),
+            ExportColumn::make('status')
+                ->label('Status')
+                ->formatStateUsing(fn ($state) => match ($state) {
+                    'CHANUNAVAIL' => 'Unavailable',
+                    'NOANSWER' => 'No Answer',
+                    'BUSY' => 'Busy',
+                    'CANCEL' => 'Cancel',
+                    default => $state,
+                }),
+            ExportColumn::make('date')
+                ->label('Date'),
         ];
     }
 
