@@ -87,24 +87,24 @@ class DashboardStatisticsService
 
         $tenant = $this->getTenant();
 
-        $abandonedSql = "SELECT COUNT(*) as abandoned_count
+        $callActionSql = "SELECT
+            SUM(IF(status = 'ANSWER' AND CHAR_LENGTH(ani) < 6, 1, 0)) as answered_count,
+            SUM(IF(status IN ('CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CANCEL'), 1, 0)) as abandoned_count
             FROM pbx_callaction
-            WHERE status IN ('CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CANCEL')
-            AND date > CURDATE()";
+            WHERE date > CURDATE()";
 
         $bindings = [];
         if ($tenant) {
-            $abandonedSql .= ' AND tenant = ?';
+            $callActionSql .= ' AND tenant = ?';
             $bindings[] = $tenant;
         }
 
-        $abandonedData = DB::connection('mysql-voice')->select($abandonedSql, $bindings)[0];
-        $abandoned = (int) $abandonedData->abandoned_count;
+        $callActionData = DB::connection('mysql-voice')->select($callActionSql, $bindings)[0];
 
         return [
             'queued' => (int) $queueData->total_queue_count,
-            'answered' => (int) $queueData->total_answered_count,
-            'abandoned' => $abandoned,
+            'answered' => (int) $callActionData->answered_count,
+            'abandoned' => (int) $callActionData->abandoned_count,
             'waiting' => (int) $queueData->queue_wating_count,
         ];
     }
@@ -255,24 +255,24 @@ class DashboardStatisticsService
                      ) t
                 ) t1;')[0];
 
-            $abandonedSql = "SELECT COUNT(*) as abandoned_count
+            $callActionSql = "SELECT
+                SUM(IF(status = 'ANSWER' AND CHAR_LENGTH(ani) < 6, 1, 0)) as answered_count,
+                SUM(IF(status IN ('CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CANCEL'), 1, 0)) as abandoned_count
                 FROM pbx_callaction
-                WHERE status IN ('CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CANCEL')
-                AND date > CURDATE()";
+                WHERE date > CURDATE()";
 
             $bindings = [];
             if ($tenant) {
-                $abandonedSql .= ' AND tenant = ?';
+                $callActionSql .= ' AND tenant = ?';
                 $bindings[] = $tenant;
             }
 
-            $abandonedData = DB::connection('mysql-voice')->select($abandonedSql, $bindings)[0];
-            $abandoned = (int) $abandonedData->abandoned_count;
+            $callActionData = DB::connection('mysql-voice')->select($callActionSql, $bindings)[0];
 
             return [
                 'queued' => (int) $queueData->total_queue_count,
-                'answered' => (int) $queueData->total_answered_count,
-                'abandoned' => $abandoned,
+                'answered' => (int) $callActionData->answered_count,
+                'abandoned' => (int) $callActionData->abandoned_count,
                 'waiting' => (int) $queueData->queue_wating_count,
             ];
         });
