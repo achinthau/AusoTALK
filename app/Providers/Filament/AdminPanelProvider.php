@@ -283,6 +283,58 @@ class AdminPanelProvider extends PanelProvider
                         observer.observe(sidebar, { childList: true, subtree: true });
                     }
                 </script>',
+            )
+            ->renderHook(
+                PanelsRenderHook::SIMPLE_LAYOUT_START,
+                fn (): string => ! auth()->check()
+                    ? '<div class="login-bg-image"><img src="' . e(asset('images/company_image/login_com.jpeg')) . '" alt="" /></div>'
+                    : '',
+            )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => '
+                <style>
+                    .fi-simple-layout:has(.login-bg-image) {
+                        flex-direction: row !important;
+                        align-items: stretch !important;
+                        padding: 0 !important;
+                    }
+                    .login-bg-image {
+                        width: 66.666%;
+                        min-height: 100dvh;
+                        position: relative;
+                        flex-shrink: 0;
+                    }
+                    .login-bg-image img {
+                        position: absolute;
+                        inset: 0;
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
+                    }
+                    .fi-simple-layout:has(.login-bg-image) .fi-simple-main-ctn {
+                        width: 33.333%;
+                        max-width: none !important;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 2rem;
+                    }
+                    .fi-simple-layout:has(.login-bg-image) .fi-simple-main {
+                        max-width: 28rem !important;
+                        width: 100% !important;
+                    }
+                    @media (max-width: 1023px) {
+                        .login-bg-image { display: none; }
+                        .fi-simple-layout:has(.login-bg-image) {
+                            flex-direction: column !important;
+                            align-items: center !important;
+                        }
+                        .fi-simple-layout:has(.login-bg-image) .fi-simple-main-ctn {
+                            width: 100% !important;
+                        }
+                    }
+                </style>',
             );
     }
 }
