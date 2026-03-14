@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('extensions', function (Blueprint $table) {
-            $table->string('context')->nullable();
+            // $table->string('context')->nullable();
             $table->string('status')->nullable();
             $table->string('exten_type')->nullable();
             $table->string('updatedby')->nullable();
@@ -25,7 +25,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('extensions', function (Blueprint $table) {
-            $table->dropColumn(['context', 'status', 'exten_type', 'updatedby']);
+            $table->dropColumn(['status', 'exten_type', 'updatedby']);
         });
     }
 };
