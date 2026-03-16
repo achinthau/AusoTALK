@@ -85,11 +85,16 @@ class AssignExtensionsAction extends Action
                             return [];
                         }
 
-                        // Get all SIP/PJSIP extensions with status == 0 (unassigned)
+                        // Get all SIP/PJSIP extensions with status == 0 (unassigned) or already assigned to this user
                         return Extension::where('company_id', $company_id)
-                            ->where('status', 0)
                             ->whereHas('extensionType', function ($query) {
                                 $query->whereIn('name', ['sip', 'pjsip', 'SIP', 'PJSIP']);
+                            })
+                            ->where(function ($query) use ($user) {
+                                $query->where('status', 0);
+                                if ($user && $user->primary_extension) {
+                                    $query->orWhere('number', $user->primary_extension);
+                                }
                             })
                             ->get()
                             ->mapWithKeys(fn ($ext) => [
@@ -114,11 +119,16 @@ class AssignExtensionsAction extends Action
                             return [];
                         }
 
-                        // Get all IAX/IAX2 extensions with status == 0 (unassigned)
+                        // Get all IAX/IAX2 extensions with status == 0 (unassigned) or already assigned to this user
                         return Extension::where('company_id', $company_id)
-                            ->where('status', 0)
                             ->whereHas('extensionType', function ($query) {
                                 $query->whereIn('name', ['iax', 'iax2', 'IAX', 'IAX2']);
+                            })
+                            ->where(function ($query) use ($user) {
+                                $query->where('status', 0);
+                                if ($user && $user->secondary_extension) {
+                                    $query->orWhere('number', $user->secondary_extension);
+                                }
                             })
                             ->get()
                             ->mapWithKeys(fn ($ext) => [
