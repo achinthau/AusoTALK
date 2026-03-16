@@ -106,15 +106,20 @@ class AgentsWidget extends Widget
     {
         $user = auth()->user();
 
-        // For non-super-admins, filter by branch
+        // For non-super-admins, filter by branch and only users with extensions
         if (! $user?->hasRole('super_admin') && $this->selectedBranchId) {
             return User::query()
                 ->where('branch_id', $this->selectedBranchId)
-                ->orderBy('name')
+                ->where(function ($query) {
+                    $query->whereNotNull('primary_extension')
+                        ->orWhereNotNull('secondary_extension');
+                })
+                ->orderBy('primary_extension', 'asc')
+                ->orderBy('secondary_extension', 'asc')
                 ->get();
         }
 
-        // For super admins, filter by company if selected
+        // For super admins, filter by company if selected and only users with extensions
         if ($user?->hasRole('super_admin')) {
             if ($this->selectedCompanyId === 0 || $this->selectedCompanyId === '0') {
                 $companyId = null;
@@ -124,15 +129,25 @@ class AgentsWidget extends Widget
 
             return User::query()
                 ->when($companyId, fn ($query) => $query->where('company_id', $companyId))
-                ->orderBy('name')
+                ->where(function ($query) {
+                    $query->whereNotNull('primary_extension')
+                        ->orWhereNotNull('secondary_extension');
+                })
+                ->orderBy('primary_extension', 'asc')
+                ->orderBy('secondary_extension', 'asc')
                 ->get();
         }
 
-        // Default to user's branch
+        // Default to user's branch and only users with extensions
         if ($user?->branch_id) {
             return User::query()
                 ->where('branch_id', $user->branch_id)
-                ->orderBy('name')
+                ->where(function ($query) {
+                    $query->whereNotNull('primary_extension')
+                        ->orWhereNotNull('secondary_extension');
+                })
+                ->orderBy('primary_extension', 'asc')
+                ->orderBy('secondary_extension', 'asc')
                 ->get();
         }
 
@@ -180,12 +195,17 @@ class AgentsWidget extends Widget
 
         $agents = $agentsQuery
             ->with(['department'])
-            ->orderBy('name')
+            ->orderByRaw('CAST(primary_extension AS UNSIGNED) ASC')
+            ->orderByRaw('CAST(secondary_extension AS UNSIGNED) ASC')
             ->get();
 
         $result = [];
 
         foreach ($agents as $agent) {
+            // Only include users with at least one extension
+            if (empty($agent->primary_extension) && empty($agent->secondary_extension)) {
+                continue;
+            }
             $departmentName = $agent->department?->name ?? 'Unassigned';
             if (! isset($result[$departmentName])) {
                 $result[$departmentName] = [];
