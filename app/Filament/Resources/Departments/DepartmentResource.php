@@ -37,11 +37,10 @@ class DepartmentResource extends Resource
     protected static function scopeByCompany($query)
     {
         $user = auth()->user();
-        // If user has a company, show only departments from that company
-        if ($user && $user->company_id) {
+        // Only restrict if not super admin
+        if ($user && $user->company_id && ! $user->hasRole('super_admin')) {
             return $query->where('company_id', $user->company_id);
         }
-
         // Super admin sees all departments
         return $query;
     }
