@@ -129,13 +129,13 @@ class CdrsTable
                             ->toArray();
                     }),
 
-                TernaryFilter::make('is_internal')
-                    ->label('Call Type')
-                    ->queries(
-                        true: fn (Builder $query) => $query->whereRaw('CHAR_LENGTH(src) = 9'),
-                        false: fn (Builder $query) => $query->whereRaw('CHAR_LENGTH(src) != 9')
-                    )
-                    ->attribute('src'),
+                // TernaryFilter::make('is_internal')
+                //     ->label('Call Type')
+                //     ->queries(
+                //         true: fn (Builder $query) => $query->whereRaw('CHAR_LENGTH(src) = 9'),
+                //         false: fn (Builder $query) => $query->whereRaw('CHAR_LENGTH(src) != 9')
+                //     )
+                //     ->attribute('src'),
             ])
             ->recordActions([
                 //
