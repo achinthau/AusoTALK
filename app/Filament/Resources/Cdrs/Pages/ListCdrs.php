@@ -18,12 +18,13 @@ class ListCdrs extends ListRecords
 
         // Super admin can see all CDRs
         if ($user->hasRole('super_admin')) {
-            return $query;
+            return $query->withComputedAttributes();
         }
 
         // Regular users and company admins can only see CDRs from their company
         if ($user->company_id && $user->company?->context) {
-            return $query->where('dcontext', $user->company->context);
+            return $query->where('dcontext', $user->company->context)
+                ->withComputedAttributes();
         }
 
         // If no company context, return empty results

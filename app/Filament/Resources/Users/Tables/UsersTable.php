@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Filament\Resources\Users\Actions\AssignExtensionsAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -14,107 +15,109 @@ class UsersTable
     {
         return $table
             ->columns([
-                TextColumn::make('name')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('email')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('phone')
-                    ->label('Phone')
-                    ->searchable()
-                    ->sortable(),
-                
-                TextColumn::make('nic')
-                    ->label('NIC')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('gender')
-                    ->label('Gender')
-                    ->searchable()
-                    ->sortable()
-                    ->badge()
-                    ->color(function (string $state): string {
-                        return match ($state) {
-                            'male' => 'info',
-                            'female' => 'success',
-                            'other' => 'warning',
-                            default => 'gray',
-                        };
-                    })
-                    ->formatStateUsing(function (string $state): string {
-                        return match ($state) {
-                            'male' => 'Male',
-                            'female' => 'Female',
-                            'other' => 'Other',
-                            default => $state,
-                        };
-                    }),
-                TextColumn::make('address')
-                    ->label('Address')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('company.name')
-                    ->label('Company')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('branch.name')
-                    ->label('Branch')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('department.name')
-                    ->label('Department')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('roles.name')
-                    ->label('Role')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('primary_extension')
-                    ->label('Primary Extension')
-                    ->sortable(),
-                TextColumn::make('secondary_extension')
-                    ->label('Secondary Extension')
-                    ->sortable(),
-            ])
+            TextColumn::make('name')
+            ->searchable()
+            ->sortable(),
+            TextColumn::make('email')
+            ->searchable()
+            ->sortable(),
+            TextColumn::make('phone')
+            ->label('Phone')
+            ->searchable()
+            ->sortable(),
+
+            TextColumn::make('nic')
+            ->label('NIC')
+            ->searchable()
+            ->sortable(),
+            TextColumn::make('gender')
+            ->label('Gender')
+            ->searchable()
+            ->sortable()
+            ->badge()
+            ->color(function (string $state): string {
+            return match ($state) {
+                    'male' => 'info',
+                    'female' => 'success',
+                    'other' => 'warning',
+                    default => 'gray',
+                };
+        })
+            ->formatStateUsing(function (string $state): string {
+            return match ($state) {
+                    'male' => 'Male',
+                    'female' => 'Female',
+                    'other' => 'Other',
+                    default => $state,
+                };
+        }),
+            TextColumn::make('address')
+            ->label('Address')
+            ->searchable()
+            ->sortable(),
+            TextColumn::make('company.name')
+            ->label('Company')
+            ->searchable()
+            ->sortable(),
+            TextColumn::make('branch.name')
+            ->label('Branch')
+            ->searchable()
+            ->sortable(),
+            TextColumn::make('department.name')
+            ->label('Department')
+            ->searchable()
+            ->sortable(),
+            TextColumn::make('roles.name')
+            ->label('Role')
+            ->searchable()
+            ->sortable(),
+            TextColumn::make('primary_extension')
+            ->label('Primary Extension')
+            ->sortable(),
+            TextColumn::make('secondary_extension')
+            ->label('Secondary Extension')
+            ->sortable(),
+        ])
             ->filters([
-                //
-            ])
+            //
+        ])
             ->recordUrl(false)
             ->recordActions([
-                EditAction::make()
-                    ->modal()
-                    ->modalHeading('Edit User')
-                    ->using(function ($record, array $data) {
-                        // Handle password
-                        if (empty($data['password'])) {
-                            unset($data['password']);
-                        } else {
-                            $data['password'] = bcrypt($data['password']);
-                        }
+            EditAction::make()
+            ->modal()
+            ->modalHeading('Edit User')
+            ->using(function ($record, array $data) {
+            // Handle password
+            if (empty($data['password'])) {
+                unset($data['password']);
+            }
+            else {
+                $data['password'] = bcrypt($data['password']);
+            }
 
-                        // Store role for later assignment
-                        $role = $data['roles'] ?? null;
+            // Store role for later assignment
+            $role = $data['roles'] ?? null;
 
-                        // Remove non-database fields
-                        unset($data['roles']);
-                        unset($data['password_confirmation']);
+            // Remove non-database fields
+            unset($data['roles']);
+            unset($data['password_confirmation']);
 
-                        // Update the user
-                        $record->update($data);
+            // Update the user
+            $record->update($data);
 
-                        // Assign role
-                        if ($role) {
-                            $record->syncRoles([$role]);
-                        }
+            // Assign role
+            if ($role) {
+                $record->syncRoles([$role]);
+            }
 
-                        return $record;
-                    }),
-            ])
+            return $record;
+        }),
+        AssignExtensionsAction::make(),
+        ])
             ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            BulkActionGroup::make([
+                DeleteBulkAction::make(),
+            ]),
+        ]);
     }
 }

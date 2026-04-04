@@ -2,11 +2,19 @@
 
 namespace App\Filament\Resources\Cdrs\Tables;
 
+use AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade;
 use App\Filament\Exports\CdrsExporter;
 use App\Models\Cdr;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\Exports\Enums\ExportFormat;
+use Filament\Actions\Exports\ExportColumn;
+use Filament\Actions\Exports\Jobs\CreateXlsxFile;
+use Filament\Actions\Exports\Jobs\ExportCompletion;
+use Filament\Actions\Exports\Jobs\PrepareCsvExport;
+use Filament\Actions\Exports\Models\Export;
+use Filament\Forms\Components\DatePicker;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Filters\Filter;
@@ -14,6 +22,8 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class CdrsTable
@@ -84,7 +94,13 @@ class CdrsTable
                     ->view('filament.tables.columns.recording-player')
                     ->getStateUsing(function (Cdr $record): array {
                         $filepath = 'monitor_1/'.$record->uniqueid.'.wav';
-                        $hasFile = Storage::disk('public')->exists($filepath) || file_exists(storage_path('app/public/'.$filepath));
+
+                        // Cache file existence check for 1 hour per uniqueid to reduce I/O
+                        $hasFile = Cache::remember(
+                            'recording_exists_'.$record->uniqueid,
+                            3600,
+                            fn () => Storage::disk('public')->exists($filepath) || file_exists(storage_path('app/public/'.$filepath))
+                        );
 
                         return [
                             'uniqueid' => $record->uniqueid,
@@ -103,10 +119,10 @@ class CdrsTable
             ->filters([
                 Filter::make('date_range')
                     ->form([
-                        \Filament\Forms\Components\DatePicker::make('from_date')
+                        DatePicker::make('from_date')
                             ->label('From Date')
                             ->default(now()->subDays(30)),
-                        \Filament\Forms\Components\DatePicker::make('to_date')
+                        DatePicker::make('to_date')
                             ->label('To Date')
                             ->default(now()),
                     ])
@@ -124,18 +140,23 @@ class CdrsTable
 
                 SelectFilter::make('disposition')
                     ->options(function (): array {
-                        return Cdr::distinct('disposition')
-                            ->pluck('disposition', 'disposition')
-                            ->toArray();
+                        // Cache disposition options for 24 hours to avoid full table scan
+                        return Cache::remember(
+                            'cdr_disposition_options',
+                            60 * 60 * 24,
+                            fn () => Cdr::distinct('disposition')
+                                ->pluck('disposition', 'disposition')
+                                ->toArray()
+                        );
                     }),
 
-                TernaryFilter::make('is_internal')
-                    ->label('Call Type')
-                    ->queries(
-                        true: fn (Builder $query) => $query->whereRaw('CHAR_LENGTH(src) = 9'),
-                        false: fn (Builder $query) => $query->whereRaw('CHAR_LENGTH(src) != 9')
-                    )
-                    ->attribute('src'),
+                // TernaryFilter::make('is_internal')
+                //     ->label('Call Type')
+                //     ->queries(
+                //         true: fn (Builder $query) => $query->whereRaw('CHAR_LENGTH(src) = 9'),
+                //         false: fn (Builder $query) => $query->whereRaw('CHAR_LENGTH(src) != 9')
+                //     )
+                //     ->attribute('src'),
             ])
             ->recordActions([
                 //
@@ -153,13 +174,13 @@ class CdrsTable
 
                             // Get column map
                             $columnMap = collect(CdrsExporter::getColumns())
-                                ->mapWithKeys(fn (\Filament\Actions\Exports\ExportColumn $column) => [
+                                ->mapWithKeys(fn (ExportColumn $column) => [
                                     $column->getName() => $column->getLabel(),
                                 ])
                                 ->all();
 
                             // Create export record
-                            $export = \Filament\Actions\Exports\Models\Export::make([
+                            $export = Export::make([
                                 'user_id' => auth()->id(),
                                 'exporter' => CdrsExporter::class,
                                 'total_rows' => $records->count(),
@@ -172,27 +193,27 @@ class CdrsTable
 
                             // Dispatch export job using Filament's internal pattern
                             $columnMap = collect(CdrsExporter::getColumns())
-                                ->mapWithKeys(fn (\Filament\Actions\Exports\ExportColumn $column) => [
+                                ->mapWithKeys(fn (ExportColumn $column) => [
                                     $column->getName() => $column->getLabel(),
                                 ])
                                 ->all();
 
                             // Get the query for selected records only
                             $query = $records->toQuery();
-                            $serializedQuery = \AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade::serialize($query);
+                            $serializedQuery = EloquentSerializeFacade::serialize($query);
 
                             $formats = [ExportFormat::Csv, ExportFormat::Xlsx];
                             $hasXlsx = in_array(ExportFormat::Xlsx, $formats);
                             $hasCsv = in_array(ExportFormat::Csv, $formats);
 
-                            $makeCreateXlsxFileJob = fn () => new \Filament\Actions\Exports\Jobs\CreateXlsxFile(
+                            $makeCreateXlsxFileJob = fn () => new CreateXlsxFile(
                                 export: $export,
                                 columnMap: $columnMap,
                             );
 
                             $jobs = [
-                                \Illuminate\Support\Facades\Bus::batch([
-                                    app(\Filament\Actions\Exports\Jobs\PrepareCsvExport::class, [
+                                Bus::batch([
+                                    app(PrepareCsvExport::class, [
                                         'export' => $export,
                                         'query' => $serializedQuery,
                                         'columnMap' => $columnMap,
@@ -208,7 +229,7 @@ class CdrsTable
                             }
 
                             // Add ExportCompletion
-                            $jobs[] = app(\Filament\Actions\Exports\Jobs\ExportCompletion::class, [
+                            $jobs[] = app(ExportCompletion::class, [
                                 'authGuard' => 'web',
                                 'export' => $export,
                                 'columnMap' => $columnMap,
@@ -221,9 +242,9 @@ class CdrsTable
                                 $jobs[] = $makeCreateXlsxFileJob();
                             }
 
-                            \Illuminate\Support\Facades\Bus::chain($jobs)->dispatch();
+                            Bus::chain($jobs)->dispatch();
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Export Started')
                                 ->body('Exporting '.$records->count().' selected record(s)...')
                                 ->success()

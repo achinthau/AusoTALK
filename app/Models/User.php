@@ -79,4 +79,69 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Extension::class, 'extension', 'number');
     }
+
+    protected static function booted()
+    {
+        static::created(function (User $user) {
+            if ($user->primary_extension) {
+                Extension::where('number', $user->primary_extension)
+                    ->where('company_id', $user->company_id)
+                    ->update(['status' => 1]);
+            }
+            if ($user->secondary_extension) {
+                Extension::where('number', $user->secondary_extension)
+                    ->where('company_id', $user->company_id)
+                    ->update(['status' => 1]);
+            }
+        });
+
+        static::updating(function (User $user) {
+            if ($user->isDirty('primary_extension')) {
+                $oldExtension = $user->getOriginal('primary_extension');
+                $newExtension = $user->primary_extension;
+
+                if ($oldExtension) {
+                    Extension::where('number', $oldExtension)
+                        ->where('company_id', $user->company_id)
+                        ->update(['status' => 0]);
+                }
+
+                if ($newExtension) {
+                    Extension::where('number', $newExtension)
+                        ->where('company_id', $user->company_id)
+                        ->update(['status' => 1]);
+                }
+            }
+
+            if ($user->isDirty('secondary_extension')) {
+                $oldExtension = $user->getOriginal('secondary_extension');
+                $newExtension = $user->secondary_extension;
+
+                if ($oldExtension) {
+                    Extension::where('number', $oldExtension)
+                        ->where('company_id', $user->company_id)
+                        ->update(['status' => 0]);
+                }
+
+                if ($newExtension) {
+                    Extension::where('number', $newExtension)
+                        ->where('company_id', $user->company_id)
+                        ->update(['status' => 1]);
+                }
+            }
+        });
+
+        static::deleting(function (User $user) {
+            if ($user->primary_extension) {
+                Extension::where('number', $user->primary_extension)
+                    ->where('company_id', $user->company_id)
+                    ->update(['status' => 0]);
+            }
+            if ($user->secondary_extension) {
+                Extension::where('number', $user->secondary_extension)
+                    ->where('company_id', $user->company_id)
+                    ->update(['status' => 0]);
+            }
+        });
+    }
 }
