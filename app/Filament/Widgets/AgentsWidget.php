@@ -4,8 +4,10 @@ namespace App\Filament\Widgets;
 
 use App\Models\Branch;
 use App\Models\Company;
+use App\Models\Department;
 use App\Models\User;
 use Filament\Widgets\Widget;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Redis;
 
 class AgentsWidget extends Widget
@@ -50,17 +52,66 @@ class AgentsWidget extends Widget
     }
 
     /**
-     * Initialize agent on-call status from Redis
+     * Initialize agent on-call status from Redis (batched for performance)
      */
     private function initializeAgentStatus(): void
     {
-        $this->agentOnCallStatus = [];
-        foreach ($this->getAgents() as $agent) {
-            $this->agentOnCallStatus[$agent->id] = $this->isAgentOnCall($agent);
-        }
+        $agents = $this->getAgents();
+        $this->agentOnCallStatus = $this->batchGetAgentRedisStatuses($agents);
     }
 
-    public function getCompanies(): \Illuminate\Database\Eloquent\Collection
+    /**
+     * Batch fetch agent on-call statuses from Redis to avoid N+1
+     *
+     * @param  Collection  $agents
+     * @return array<int, false|string>
+     */
+    private function batchGetAgentRedisStatuses($agents): array
+    {
+        $statuses = [];
+
+        if ($agents->isEmpty()) {
+            return $statuses;
+        }
+
+        $redis = Redis::connection()->client();
+        $redis->select(1);
+
+        // Group agents by company to batch Redis calls
+        $agentsByCompany = $agents->groupBy(function ($agent) {
+            return $agent->company?->context;
+        });
+
+        foreach ($agentsByCompany as $context => $companyAgents) {
+            if (! $context) {
+                // Agents without company context
+                foreach ($companyAgents as $agent) {
+                    $statuses[$agent->id] = false;
+                }
+
+                continue;
+            }
+
+            // Fetch all Redis keys for this company's agents
+            $keys = $companyAgents->map(fn ($agent) => "agent_on_call-{$context}-{$agent->id}")->toArray();
+            $redisData = $redis->mget($keys);
+
+            // Map results back to agent IDs
+            foreach ($companyAgents as $index => $agent) {
+                $callData = $redisData[$index] ?? null;
+                if (! $callData) {
+                    $statuses[$agent->id] = false;
+                } else {
+                    $decoded = json_decode($callData, true);
+                    $statuses[$agent->id] = $decoded['type'] ?? 'primary';
+                }
+            }
+        }
+
+        return $statuses;
+    }
+
+    public function getCompanies(): Collection
     {
         $user = auth()->user();
 
@@ -82,7 +133,7 @@ class AgentsWidget extends Widget
         return collect();
     }
 
-    public function getBranches(): \Illuminate\Database\Eloquent\Collection
+    public function getBranches(): Collection
     {
         $user = auth()->user();
 
@@ -102,7 +153,7 @@ class AgentsWidget extends Widget
             ->get();
     }
 
-    public function getAgents(): \Illuminate\Database\Eloquent\Collection
+    public function getAgents(): Collection
     {
         $user = auth()->user();
 
@@ -114,6 +165,7 @@ class AgentsWidget extends Widget
                     $query->whereNotNull('primary_extension')
                         ->orWhereNotNull('secondary_extension');
                 })
+                ->with(['company', 'department'])
                 ->orderBy('primary_extension', 'asc')
                 ->orderBy('secondary_extension', 'asc')
                 ->get();
@@ -133,6 +185,7 @@ class AgentsWidget extends Widget
                     $query->whereNotNull('primary_extension')
                         ->orWhereNotNull('secondary_extension');
                 })
+                ->with(['company', 'department'])
                 ->orderBy('primary_extension', 'asc')
                 ->orderBy('secondary_extension', 'asc')
                 ->get();
@@ -146,6 +199,7 @@ class AgentsWidget extends Widget
                     $query->whereNotNull('primary_extension')
                         ->orWhereNotNull('secondary_extension');
                 })
+                ->with(['company', 'department'])
                 ->orderBy('primary_extension', 'asc')
                 ->orderBy('secondary_extension', 'asc')
                 ->get();
@@ -194,7 +248,7 @@ class AgentsWidget extends Widget
         }
 
         $agents = $agentsQuery
-            ->with(['department'])
+            ->with(['company', 'department'])
             ->orderByRaw('CAST(primary_extension AS UNSIGNED) ASC')
             ->orderByRaw('CAST(secondary_extension AS UNSIGNED) ASC')
             ->get();
@@ -219,7 +273,7 @@ class AgentsWidget extends Widget
         return $result;
     }
 
-    public function getDepartments(): \Illuminate\Database\Eloquent\Collection
+    public function getDepartments(): Collection
     {
         $user = auth()->user();
 
@@ -259,7 +313,7 @@ class AgentsWidget extends Widget
             ->pluck('department_id')
             ->filter();
 
-        $departments = \App\Models\Department::whereIn('id', $departmentIds)
+        $departments = Department::whereIn('id', $departmentIds)
             ->orderBy('name')
             ->get();
 

@@ -23,15 +23,16 @@ class AssignExtensionsAction extends Action
             ->label('Assign Extensions')
             ->icon('heroicon-o-link')
             ->modalHeading('Assign Extensions to User')
+            ->fillForm(fn ($record) => [
+                'user_id' => $record?->id,
+                'primary_extension' => $record?->primary_extension,
+                'secondary_extension' => $record?->secondary_extension,
+            ])
             ->form([
                 Select::make('user_id')
                     ->label('Select User')
                     ->options(function () {
-                        $query = User::query()
-                            ->where(function ($query) {
-                                $query->whereNull('primary_extension')
-                                    ->orWhereNull('secondary_extension');
-                            });
+                        $query = User::query();
 
                         // If company admin, filter by their company
                         $user = auth()->user();
@@ -54,6 +55,9 @@ class AssignExtensionsAction extends Action
                                 return [$user->id => $label];
                             });
                     })
+                    ->default(fn ($record) => $record?->id)
+                    ->hidden(fn ($record) => $record !== null)
+                    ->dehydrated()
                     ->required()
                     ->searchable()
                     ->live()
@@ -73,12 +77,14 @@ class AssignExtensionsAction extends Action
                     }),
                 Select::make('primary_extension')
                     ->label('Primary Extension')
-                    ->options(function ($get) {
-                        if (! $get('user_id')) {
+                    ->placeholder('None')
+                    ->options(function ($get, $record) {
+                        $userId = $get('user_id') ?? $record?->id;
+                        if (! $userId) {
                             return [];
                         }
 
-                        $user = User::find($get('user_id'));
+                        $user = User::find($userId);
                         $company_id = $user?->company_id;
 
                         if (! $company_id) {
@@ -102,17 +108,19 @@ class AssignExtensionsAction extends Action
                             ])
                             ->toArray();
                     })
-                    ->disabled(fn ($get) => ! $get('user_id'))
+                    ->disabled(fn ($get, $record) => ! ($get('user_id') ?? $record?->id))
                     ->searchable()
                     ->live(),
                 Select::make('secondary_extension')
                     ->label('Secondary Extension')
-                    ->options(function ($get) {
-                        if (! $get('user_id')) {
+                    ->placeholder('None')
+                    ->options(function ($get, $record) {
+                        $userId = $get('user_id') ?? $record?->id;
+                        if (! $userId) {
                             return [];
                         }
 
-                        $user = User::find($get('user_id'));
+                        $user = User::find($userId);
                         $company_id = $user?->company_id;
 
                         if (! $company_id) {
@@ -136,30 +144,18 @@ class AssignExtensionsAction extends Action
                             ])
                             ->toArray();
                     })
-                    ->disabled(fn ($get) => ! $get('user_id'))
+                    ->disabled(fn ($get, $record) => ! ($get('user_id') ?? $record?->id))
                     ->searchable()
                     ->live(),
             ])
             ->action(function (array $data) {
                 $user = User::find($data['user_id']);
 
+                // Updating user will trigger model hooks in User.php to manage extension status
                 $user->update([
                     'primary_extension' => $data['primary_extension'] ?? null,
                     'secondary_extension' => $data['secondary_extension'] ?? null,
                 ]);
-
-                // Update extension status to 1 (assigned)
-                if ($data['primary_extension']) {
-                    Extension::where('number', $data['primary_extension'])
-                        ->where('company_id', $user->company_id)
-                        ->update(['status' => 1]);
-                }
-
-                if ($data['secondary_extension']) {
-                    Extension::where('number', $data['secondary_extension'])
-                        ->where('company_id', $user->company_id)
-                        ->update(['status' => 1]);
-                }
 
                 Notification::make()
                     ->success()
