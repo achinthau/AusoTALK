@@ -57,7 +57,7 @@ class AssignExtensionsAction extends Action
                     })
                     ->default(fn ($record) => $record?->id)
                     ->hidden(fn ($record) => $record !== null)
-                    ->dehydrated()
+                    ->dehydrated(fn () => true)
                     ->required()
                     ->searchable()
                     ->live()
@@ -149,7 +149,12 @@ class AssignExtensionsAction extends Action
                     ->live(),
             ])
             ->action(function (array $data) {
-                $user = User::find($data['user_id']);
+
+                $userId = $data['user_id'] ?? ($this->record->id ?? null);
+                if (empty($userId)) {
+                    throw new \Exception('User ID is missing from the form data. Please select a user.');
+                }
+                $user = User::find($userId);
 
                 // Updating user will trigger model hooks in User.php to manage extension status
                 $user->update([

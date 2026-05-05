@@ -134,14 +134,16 @@
             <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; width: 100%; max-width: 100%; margin-bottom: 1rem;">
                 @forelse($agents as $agent)
                     @php
-                        $callType = $this->agentOnCallStatus[$agent->id] ?? false;
-                        $isPrimaryOnCall = $callType === 'primary';
-                        $isSecondaryOnCall = $callType === 'secondary';
+                        $status = $this->agentOnCallStatus[$agent->id] ?? ['on_call' => false, 'call_type' => 'primary', 'on_call_rec' => false, 'call_type_rec' => 'primary'];
                     @endphp
                     @if($agent->primary_extension)
+                        @php
+                            $isPrimaryOnCall = $status['on_call'] && $status['call_type'] === 'primary';
+                            $isPrimaryOnCallRec = $status['on_call_rec'] && $status['call_type_rec'] === 'primary';
+                        @endphp
                         <div 
-                            x-data="{ showCallActions: false, isOnCall: {{ $isPrimaryOnCall ? 'true' : 'false' }} }"
-                            style="width: calc(16.666% - 0.625rem); display: flex; align-items: flex-start; gap: 0.5rem; border: 3px solid {{ $isPrimaryOnCall ? '#16a34a' : '#c1c1c1' }}; border-radius: 1.8rem; position: relative;" 
+                            x-data="{ showCallActions: false, isOnCall: {{ $isPrimaryOnCall || $isPrimaryOnCallRec ? 'true' : 'false' }} }"
+                            style="width: calc(16.666% - 0.625rem); display: flex; align-items: flex-start; gap: 0.5rem; border: 3px solid {{ $isPrimaryOnCallRec ? '#dc2626' : ($isPrimaryOnCall ? '#16a34a' : '#c1c1c1') }}; border-radius: 1.8rem; position: relative;" 
                             class="shadow p-4 transition-all duration-200 {{ $agent->is_logged_in ? 'bg-green-50' : 'bg-gray-50' }} agent-item" 
                             data-agent-id="{{ $agent->id }}"
                             data-extension-type="primary"
@@ -234,9 +236,13 @@
 
                     <!-- Secondary Extension Card -->
                     @if($agent->secondary_extension)
+                    @php
+                        $isSecondaryOnCall = $status['on_call'] && $status['call_type'] === 'secondary';
+                        $isSecondaryOnCallRec = $status['on_call_rec'] && $status['call_type_rec'] === 'secondary';
+                    @endphp
                     <div 
-                        x-data="{ showCallActions: false, isOnCall: {{ $isSecondaryOnCall ? 'true' : 'false' }} }"
-                        style="width: calc(16.666% - 0.625rem); display: flex; align-items: flex-start; gap: 0.5rem; border: 3px solid {{ $isSecondaryOnCall ? '#16a34a' : '#c1c1c1' }}; border-radius: 1.8rem; position: relative;" 
+                        x-data="{ showCallActions: false, isOnCall: {{ $isSecondaryOnCall || $isSecondaryOnCallRec ? 'true' : 'false' }} }"
+                        style="width: calc(16.666% - 0.625rem); display: flex; align-items: flex-start; gap: 0.5rem; border: 3px solid {{ $isSecondaryOnCallRec ? '#dc2626' : ($isSecondaryOnCall ? '#16a34a' : '#c1c1c1') }}; border-radius: 1.8rem; position: relative;" 
                         class="shadow p-4 transition-all duration-200 bg-gray-50 agent-item" 
                         data-agent-id="{{ $agent->id }}"
                         data-extension-type="secondary"

@@ -13,13 +13,26 @@ const agentPoller = {
     /**
      * Update a single agent card's border + Alpine isOnCall state
      */
-    updateElement(agentId, isOnCall, callType) {
+    updateElement(agentId, isOnCall, isOnCallRec, callType, callTypeRec) {
         const elements = document.querySelectorAll(`[data-agent-id="${agentId}"]`);
 
         elements.forEach(element => {
             const extType = element.getAttribute('data-extension-type');
-            const isThisExtOnCall = isOnCall && callType === extType;
-            const newColor = isThisExtOnCall ? '#16a34a' : '#c1c1c1';
+            
+            // Determine border color based on Redis keys:
+            // - Red if agent_on_call_rec- is present AND extension type matches callTypeRec
+            // - Green if agent_on_call- is present AND extension type matches callType
+            // - Gray otherwise
+            let newColor = '#c1c1c1'; // default gray
+            let isThisExtOnCall = false;
+            
+            if (isOnCallRec && callTypeRec === extType) {
+                newColor = '#ad5b5b'; // red for agent_on_call_rec- matching extension type
+                isThisExtOnCall = true;
+            } else if (isOnCall && callType === extType) {
+                newColor = '#16a34a'; // green for agent_on_call- matching extension type
+                isThisExtOnCall = true;
+            }
 
             if (element.style.borderColor !== newColor) {
                 element.style.borderColor = newColor;
@@ -69,7 +82,7 @@ const agentPoller = {
                 if (data && data.agents) {
                     // Apply all statuses in one synchronous pass — no race conditions
                     for (const [agentId, status] of Object.entries(data.agents)) {
-                        this.updateElement(agentId, status.isOnCall, status.callType || 'primary');
+                        this.updateElement(agentId, status.isOnCall, status.isOnCallRec, status.callType || 'primary', status.callTypeRec || 'primary');
                     }
                 }
             })

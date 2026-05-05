@@ -28,9 +28,17 @@ class AgentsWidget extends Widget
 
     /**
      * Store agent on-call status for reactive updates.
-     * Values: false (not on call), 'primary', or 'secondary'
+     * Structure:
+     * [
+     *   agent_id => [
+     *     'on_call' => true|false, // present in agent_on_call-
+     *     'call_type' => 'primary'|'secondary', // type from agent_on_call-
+     *     'on_call_rec' => true|false, // present in agent_on_call_rec-
+     *     'call_type_rec' => 'primary'|'secondary', // type from agent_on_call_rec-
+     *   ]
+     * ]
      *
-     * @var array<int, false|string>
+     * @var array<int, array{on_call: bool, call_type: string, on_call_rec: bool, call_type_rec: string}>
      */
     public array $agentOnCallStatus = [];
 
@@ -64,7 +72,7 @@ class AgentsWidget extends Widget
      * Batch fetch agent on-call statuses from Redis to avoid N+1
      *
      * @param  Collection  $agents
-     * @return array<int, false|string>
+     * @return array<int, array{on_call: bool, call_type: string, on_call_rec: bool, call_type_rec: string}>
      */
     private function batchGetAgentRedisStatuses($agents): array
     {
@@ -86,25 +94,43 @@ class AgentsWidget extends Widget
             if (! $context) {
                 // Agents without company context
                 foreach ($companyAgents as $agent) {
-                    $statuses[$agent->id] = false;
+                    $statuses[$agent->id] = [
+                        'on_call' => false,
+                        'call_type' => 'primary',
+                        'on_call_rec' => false,
+                        'call_type_rec' => 'primary',
+                    ];
                 }
-
                 continue;
             }
 
-            // Fetch all Redis keys for this company's agents
-            $keys = $companyAgents->map(fn ($agent) => "agent_on_call-{$context}-{$agent->id}")->toArray();
-            $redisData = $redis->mget($keys);
+            // Prepare both key types for all agents
+            $onCallKeys = $companyAgents->map(fn ($agent) => "agent_on_call-{$context}-{$agent->id}")->toArray();
+            $onCallRecKeys = $companyAgents->map(fn ($agent) => "agent_on_call_rec-{$context}-{$agent->id}")->toArray();
 
-            // Map results back to agent IDs
+            $onCallData = $redis->mget($onCallKeys);
+            $onCallRecData = $redis->mget($onCallRecKeys);
+
             foreach ($companyAgents as $index => $agent) {
-                $callData = $redisData[$index] ?? null;
-                if (! $callData) {
-                    $statuses[$agent->id] = false;
-                } else {
-                    $decoded = json_decode($callData, true);
-                    $statuses[$agent->id] = $decoded['type'] ?? 'primary';
+                $callType = 'primary';
+                $callTypeRec = 'primary';
+                
+                if (!empty($onCallData[$index])) {
+                    $decoded = json_decode($onCallData[$index], true);
+                    $callType = $decoded['type'] ?? 'primary';
                 }
+                
+                if (!empty($onCallRecData[$index])) {
+                    $decodedRec = json_decode($onCallRecData[$index], true);
+                    $callTypeRec = $decodedRec['type'] ?? 'primary';
+                }
+                
+                $statuses[$agent->id] = [
+                    'on_call' => !empty($onCallData[$index]),
+                    'call_type' => $callType,
+                    'on_call_rec' => !empty($onCallRecData[$index]),
+                    'call_type_rec' => $callTypeRec,
+                ];
             }
         }
 
