@@ -32,10 +32,11 @@ Route::match(['GET', 'POST'], '/pbx-call-answered', function (StoreAnsweredCall 
 
     $tenant = $request['tenant'];
     $type = $request['type'];
+    $type2 = $request['type2'] ?? $type;
     $extensionField = $type === 'primary' ? 'primary_extension' : 'secondary_extension';
+    $extensionField2 = $type2 === 'primary' ? 'primary_extension' : 'secondary_extension';
     $agent1 = User::where($extensionField, $request['dnis'])->first();
-    $agent2 = User::where('primary_extension', $request['ani'])
-                ->orWhere('secondary_extension', $request['ani'])
+    $agent2 = User::where($extensionField2, $request['ani'])
                 ->first();
 
     if (! $agent1) {
@@ -58,7 +59,7 @@ Route::match(['GET', 'POST'], '/pbx-call-answered', function (StoreAnsweredCall 
 
     if($agent2)
         {
-    $redis->set('agent_on_call-'.$tenant.'-'.$agent2->id, json_encode([
+    $redis->set('agent_on_call_rec-'.$tenant.'-'.$agent2->id, json_encode([
         'extension' => $request['dnis'],
         'type' => $type,
     ]));
@@ -78,11 +79,11 @@ Route::match(['GET', 'POST'], '/pbx-call-disconnected', function (StoreAnsweredC
 
     $tenant = $request['tenant'];
     $type = $request['type'];
+    $type2 = $request['type2'] ?? $type;
     $extensionField = $type === 'primary' ? 'primary_extension' : 'secondary_extension';
+    $extensionField2 = $type2 === 'primary' ? 'primary_extension' : 'secondary_extension';
     $agent1 = User::where($extensionField, $request['dnis'])->first();
-    $agent2 = User::where('primary_extension', $request['ani'])
-                ->orWhere('secondary_extension', $request['ani'])
-                ->first();
+    $agent2 = User::where($extensionField2, $request['ani'])->first();
 
     if (! $agent1) {
         Log::warning('pbx-call-disconnected: no user with extension '.$request['dnis']);
@@ -102,7 +103,7 @@ Route::match(['GET', 'POST'], '/pbx-call-disconnected', function (StoreAnsweredC
         }
     if($agent2)
         {
-    $redis->del('agent_on_call-'.$tenant.'-'.$agent2->id);
+    $redis->del('agent_on_call_rec-'.$tenant.'-'.$agent2->id);
     $redis->del('call-'.$tenant.'-'.$request['dnis']);
 
     // Broadcast agent status update to WebSocket
@@ -121,7 +122,9 @@ Route::get('/agents/{agentId}/status', function ($agentId) {
     }
 
     $isOnCall = false;
+    $isOnCallRec = false;
     $callType = null;
+    $callTypeRec = null;
     if ($agent->company) {
         $redis = Redis::connection()->client();
         $redis->select(1);
@@ -131,12 +134,21 @@ Route::get('/agents/{agentId}/status', function ($agentId) {
             $decoded = json_decode($callData, true);
             $callType = $decoded['type'] ?? 'primary';
         }
+        
+        $callDataRec = $redis->get("agent_on_call_rec-{$agent->company->context}-{$agent->id}");
+        if ($callDataRec) {
+            $isOnCallRec = true;
+            $decodedRec = json_decode($callDataRec, true);
+            $callTypeRec = $decodedRec['type'] ?? 'primary';
+        }
     }
 
     return response()->json([
         'agentId' => $agent->id,
         'isOnCall' => $isOnCall,
+        'isOnCallRec' => $isOnCallRec,
         'callType' => $callType,
+        'callTypeRec' => $callTypeRec,
     ]);
 });
 
@@ -159,18 +171,31 @@ Route::post('/agents/status-batch', function (\Illuminate\Http\Request $request)
     foreach ($agentIds as $id) {
         $agent = $agents->get($id);
         if (! $agent || ! $agent->company) {
-            $results[$id] = ['isOnCall' => false, 'callType' => null];
+            $results[$id] = ['isOnCall' => false, 'isOnCallRec' => false, 'callType' => null];
 
             continue;
         }
 
+        $isOnCall = false;
+        $isOnCallRec = false;
+        $callType = null;
+        $callTypeRec = null;
+        
         $callData = $redis->get("agent_on_call-{$agent->company->context}-{$id}");
         if ($callData) {
+            $isOnCall = true;
             $decoded = json_decode($callData, true);
-            $results[$id] = ['isOnCall' => true, 'callType' => $decoded['type'] ?? 'primary'];
-        } else {
-            $results[$id] = ['isOnCall' => false, 'callType' => null];
+            $callType = $decoded['type'] ?? 'primary';
         }
+        
+        $callDataRec = $redis->get("agent_on_call_rec-{$agent->company->context}-{$id}");
+        if ($callDataRec) {
+            $isOnCallRec = true;
+            $decodedRec = json_decode($callDataRec, true);
+            $callTypeRec = $decodedRec['type'] ?? 'primary';
+        }
+        
+        $results[$id] = ['isOnCall' => $isOnCall, 'isOnCallRec' => $isOnCallRec, 'callType' => $callType, 'callTypeRec' => $callTypeRec];
     }
 
     return response()->json(['agents' => $results]);
